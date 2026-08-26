@@ -23,7 +23,7 @@ Objectif : restituer la maquette `DESIGN.png` de maniere la plus fidele possible
 - [x] Definir la sidebar desktop compacte : logo `EmojiDeck` en haut, categories avec icone + libelle, item actif legerement surligne, separateur fin, entrees `Recents` et `Favoris` en bas de groupe.
 - [x] Definir la barre superieure desktop : recherche tres visible en haut de la zone principale, controle de theme `Theme` + icone, selecteur de langue compact, alignement horizontal sobre.
 - [x] Definir la zone de contenu desktop : titre de categorie, grille emoji large et aeree, scroll interne discret, emojis sans cartes individuelles, boutons invisibles sauf etat hover/focus.
-- [x] Definir le feedback de copie : toast flottant bas-centre, compact, avec icone de confirmation et texte court `Copie !`.
+- [x] Definir le feedback de copie : toast flottant bas-centre, compact, avec icone de confirmation et texte court `Copié !`.
 - [x] Definir la version mobile : header compact avec titre `EmojiDeck` et bouton menu, recherche pleine largeur sous le header, barre de categories sous forme d'icones, contenu en colonne.
 - [x] Definir la navigation mobile par icones : categories principales visibles horizontalement, icone active marquee par couleur et soulignement fin, pas de libelles permanents pour garder la compacite.
 - [x] Definir les sections mobiles : `Recents`, `Favoris`, puis categorie active, separees par de simples lignes fines, sans cartes autour des sections.
@@ -86,47 +86,47 @@ Objectif : permettre de trouver un emoji en francais, avec un fallback simple en
 
 Objectif : accelerer l'usage quotidien avec les emojis utilises le plus recemment.
 
-- [ ] Enregistrer chaque emoji copie dans `localStorage`.
-- [ ] Limiter la liste des recents a un nombre raisonnable, par exemple 24.
-- [ ] Eviter les doublons en remontant l'emoji deja present en tete.
-- [ ] Ajouter une categorie ou section `Recents`.
-- [ ] Masquer la section `Recents` tant qu'elle est vide.
-- [ ] Permettre la copie depuis les recents.
-- [ ] Verifier que les recents persistent apres rechargement.
+- [x] Enregistrer chaque emoji copie dans `localStorage`.
+- [x] Limiter la liste des recents a un nombre raisonnable, par exemple 24.
+- [x] Eviter les doublons en remontant l'emoji deja present en tete.
+- [x] Ajouter une categorie ou section `Recents`.
+- [x] Masquer la section `Recents` tant qu'elle est vide.
+- [x] Permettre la copie depuis les recents.
+- [x] Verifier que les recents persistent apres rechargement.
 
 ## Phase 5 - Favoris
 
 Objectif : permettre a l'utilisateur de construire une petite collection personnelle.
 
-- [ ] Ajouter une action pour marquer ou retirer un emoji des favoris.
-- [ ] Enregistrer les favoris dans `localStorage`.
-- [ ] Ajouter une categorie ou section `Favoris`.
-- [ ] Masquer la section `Favoris` tant qu'elle est vide.
-- [ ] Permettre la copie depuis les favoris.
-- [ ] Preserver l'ordre choisi ou l'ordre d'ajout.
-- [ ] Prevoir une interaction mobile confortable pour ajouter un favori.
-- [ ] Verifier que les favoris persistent apres rechargement.
+- [x] Ajouter une action pour marquer ou retirer un emoji des favoris.
+- [x] Enregistrer les favoris dans `localStorage`.
+- [x] Ajouter une categorie ou section `Favoris`.
+- [x] Masquer la section `Favoris` tant qu'elle est vide.
+- [x] Permettre la copie depuis les favoris.
+- [x] Preserver l'ordre choisi ou l'ordre d'ajout.
+- [x] Prevoir une interaction mobile confortable pour ajouter un favori.
+- [x] Verifier que les favoris persistent apres rechargement.
 
 ## Phase 6 - Theme clair, sombre et systeme
 
 Objectif : proposer un theme confortable sans complexifier l'application.
 
-- [ ] Definir les variables CSS des themes clair et sombre.
-- [ ] Detecter la preference systeme avec `prefers-color-scheme`.
-- [ ] Ajouter un controle `Light / Dark / System`.
-- [ ] Enregistrer le choix utilisateur dans `localStorage`.
-- [ ] Donner la priorite au choix utilisateur sur la preference systeme.
-- [ ] Verifier les contrastes des textes, boutons, grilles et tooltips.
+- [x] Definir les variables CSS des themes clair et sombre.
+- [x] Detecter la preference systeme avec `prefers-color-scheme`.
+- [x] Ajouter un controle `Light / Dark / System`.
+- [x] Enregistrer le choix utilisateur dans `localStorage`.
+- [x] Donner la priorite au choix utilisateur sur la preference systeme.
+- [x] Verifier les contrastes des textes, boutons, grilles et tooltips.
 
 ## Phase 7 - Navigation clavier et accessibilite
 
 Objectif : rendre l'outil rapide et utilisable sans souris.
 
-- [ ] Structurer les boutons emoji avec des labels accessibles.
-- [ ] Permettre la navigation clavier dans la grille.
-- [ ] Permettre la copie avec `Enter` ou `Space`.
-- [ ] Garder un focus visible et propre.
-- [ ] Verifier le comportement de la recherche au clavier.
+- [x] Structurer les boutons emoji avec des labels accessibles.
+- [x] Permettre la navigation clavier dans la grille.
+- [x] Permettre la copie avec `Enter` ou `Space`.
+- [x] Garder un focus visible et propre.
+- [x] Verifier le comportement de la recherche au clavier.
 - [ ] Tester avec un lecteur d'ecran au moins sur les parcours principaux.
 
 ## Phase 8 - Import Unicode / CLDR

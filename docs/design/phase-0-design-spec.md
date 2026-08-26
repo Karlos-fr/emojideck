@@ -55,7 +55,7 @@ Barre superieure desktop:
 - champ recherche largeur cible `420px` a `480px`;
 - hauteur champ: `48px` a `54px`;
 - icone de recherche a gauche;
-- raccourci clavier optionnel a droite, par exemple `Cmd K` ou `Ctrl K`;
+- raccourci clavier optionnel a droite, `Cmd F` ou `Ctrl F`;
 - controles theme et langue alignes a droite;
 - theme affiche comme libelle court + icone;
 - langue affichee comme selecteur compact, exemple `FR`.
@@ -178,7 +178,7 @@ Etats requis:
 Copie:
 
 - clic emoji copie immediatement en mode normal;
-- toast `Copie !` avec icone de succes;
+- toast `Copié !` avec icone de succes;
 - duree cible: `1200ms` a `1800ms`;
 - le toast ne doit jamais cacher la recherche ni les controles principaux.
 

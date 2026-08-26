@@ -11,6 +11,7 @@ export interface EmojiResultsView {
   gridLabel: string;
   query: string | null;
   emojis: EmojiEntry[];
+  favoriteIds: ReadonlySet<string>;
 }
 
 export function renderEmojiResults(
@@ -40,19 +41,32 @@ export function renderEmojiResults(
 
   const grid = document.createElement('div');
   grid.className = 'emoji-grid';
+  grid.setAttribute('role', 'group');
   grid.setAttribute('aria-label', view.gridLabel);
-  grid.append(...view.emojis.map((entry) => createEmojiButton(entry, view.query !== null)));
+  grid.append(
+    ...view.emojis.map((entry) =>
+      createEmojiCell(entry, view.query !== null, view.favoriteIds.has(entry.id)),
+    ),
+  );
   elements.results.append(grid);
 }
 
-function createEmojiButton(entry: EmojiEntry, isSearchResult: boolean): HTMLButtonElement {
+function createEmojiCell(
+  entry: EmojiEntry,
+  isSearchResult: boolean,
+  isFavorite: boolean,
+): HTMLDivElement {
+  const cell = document.createElement('div');
   const button = document.createElement('button');
   const emoji = document.createElement('span');
+  const favoriteButton = document.createElement('button');
+  const favoriteLabel = isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris';
 
+  cell.className = 'emoji-cell';
   button.className = 'emoji-button';
   button.type = 'button';
   button.title = entry.name.fr;
-  button.setAttribute('aria-label', entry.name.fr);
+  button.setAttribute('aria-label', `Copier : ${entry.name.fr}`);
   button.dataset.emojiButton = '';
   button.dataset.emojiId = entry.id;
   button.dataset.emoji = entry.emoji;
@@ -62,5 +76,15 @@ function createEmojiButton(entry: EmojiEntry, isSearchResult: boolean): HTMLButt
   emoji.textContent = entry.emoji;
   button.append(emoji);
 
-  return button;
+  favoriteButton.className = 'favorite-toggle';
+  favoriteButton.type = 'button';
+  favoriteButton.dataset.favoriteToggle = '';
+  favoriteButton.dataset.emojiId = entry.id;
+  favoriteButton.setAttribute('aria-label', `${favoriteLabel} : ${entry.name.fr}`);
+  favoriteButton.setAttribute('aria-pressed', String(isFavorite));
+  favoriteButton.title = favoriteLabel;
+  favoriteButton.textContent = isFavorite ? '★' : '☆';
+  cell.append(button, favoriteButton);
+
+  return cell;
 }
