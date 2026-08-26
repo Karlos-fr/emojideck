@@ -43,16 +43,16 @@ Objectif : poser les fondations du projet statique, leger, sans backend, sans co
 
 Objectif : livrer une premiere version utilisable pour chercher et copier rapidement un emoji.
 
-- [ ] Construire la mise en page principale : header, recherche, categories, grille.
-- [ ] Afficher uniquement la categorie active.
-- [ ] Ajouter la navigation entre categories.
-- [ ] Afficher une grille dense et responsive d'emojis.
-- [ ] Copier l'emoji au clic via le presse-papiers.
-- [ ] Afficher un feedback discret apres copie.
-- [ ] Ajouter une tooltip simple avec le nom de l'emoji au survol ou au focus.
-- [ ] Gerer les erreurs de copie avec un message discret.
-- [ ] Verifier l'ergonomie desktop.
-- [ ] Verifier l'ergonomie mobile.
+- [x] Construire la mise en page principale : header, recherche, categories, grille.
+- [x] Afficher uniquement la categorie active.
+- [x] Ajouter la navigation entre categories.
+- [x] Afficher une grille dense et responsive d'emojis.
+- [x] Copier l'emoji au clic via le presse-papiers.
+- [x] Afficher un feedback discret apres copie.
+- [x] Ajouter une tooltip simple avec le nom de l'emoji au survol ou au focus.
+- [x] Gerer les erreurs de copie avec un message discret.
+- [x] Verifier l'ergonomie desktop.
+- [x] Verifier l'ergonomie mobile.
 
 ## Phase 3 - Recherche initiale
 
