@@ -1,0 +1,48 @@
+:root {
+  color-scheme: light dark;
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #f4f7f8;
+  background: #0b1115;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+#app {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.app-shell {
+  width: min(100%, 560px);
+  padding: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: #0f151a;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #a6adb5;
+  font-size: 14px;
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-size: 32px;
+  letter-spacing: 0;
+}
+
+p {
+  margin: 0;
+  line-height: 1.5;
+}

@@ -31,13 +31,13 @@ Objectif : restituer la maquette `DESIGN.png` de maniere la plus fidele possible
 
 Objectif : poser les fondations du projet statique, leger, sans backend, sans compte et sans cookies.
 
-- [ ] Choisir la stack initiale : Vite + TypeScript seul, ou Vite + Preact si les composants deviennent necessaires.
-- [ ] Creer la structure du projet frontend.
-- [ ] Identifier la source de donnees emoji de depart.
-- [ ] Definir le format JSON interne d'un emoji : caractere, nom, categorie, mots-cles, variantes, codepoints.
-- [ ] Creer un petit jeu de donnees local pour demarrer sans attendre l'import complet Unicode/CLDR.
-- [ ] Definir les categories principales affichees dans la barre de navigation.
-- [ ] Documenter les objectifs techniques : statique, zero backend, zero cookie, zero pub, rapide au chargement.
+- [x] Choisir la stack initiale : Vite + TypeScript seul, ou Vite + Preact si les composants deviennent necessaires.
+- [x] Creer la structure du projet frontend.
+- [x] Identifier la source de donnees emoji de depart.
+- [x] Definir le format JSON interne d'un emoji : caractere, nom, categorie, mots-cles, variantes, codepoints.
+- [x] Creer un petit jeu de donnees local pour demarrer sans attendre l'import complet Unicode/CLDR.
+- [x] Definir les categories principales affichees dans la barre de navigation.
+- [x] Documenter les objectifs techniques : statique, zero backend, zero cookie, zero pub, rapide au chargement.
 
 ## Phase 2 - MVP clavier emoji
 
