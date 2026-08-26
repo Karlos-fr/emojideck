@@ -6,26 +6,26 @@ Ce plan transforme l'idee de `CHATGPT.md` en phases livrables. Chaque phase doit
 
 Objectif : restituer la maquette `DESIGN.png` de maniere la plus fidele possible, en version desktop, mobile, theme sombre, theme clair et mode systeme.
 
-- [ ] Analyser la maquette source `DESIGN.png` et noter les invariants visuels a conserver : interface minimaliste, compacte, sombre par defaut, peu de bordures, tres peu d'ombres, aucun encadrement inutile autour des blocs.
-- [ ] Definir la structure desktop : application centree dans la page, panneau principal sombre, sidebar compacte a gauche, separation verticale fine, zone de contenu a droite.
-- [ ] Definir la sidebar desktop compacte : logo `EmojiDeck` en haut, categories avec icone + libelle, item actif legerement surligne, separateur fin, entrees `Recents` et `Favoris` en bas de groupe.
-- [ ] Definir la barre superieure desktop : recherche tres visible en haut de la zone principale, controle de theme `Theme` + icone, selecteur de langue compact, alignement horizontal sobre.
-- [ ] Definir la zone de contenu desktop : titre de categorie, grille emoji large et aeree, scroll interne discret, emojis sans cartes individuelles, boutons invisibles sauf etat hover/focus.
-- [ ] Definir le feedback de copie : toast flottant bas-centre, compact, avec icone de confirmation et texte court `Copie !`.
-- [ ] Definir la version mobile : header compact avec titre `EmojiDeck` et bouton menu, recherche pleine largeur sous le header, barre de categories sous forme d'icones, contenu en colonne.
-- [ ] Definir la navigation mobile par icones : categories principales visibles horizontalement, icone active marquee par couleur et soulignement fin, pas de libelles permanents pour garder la compacite.
-- [ ] Definir les sections mobiles : `Recents`, `Favoris`, puis categorie active, separees par de simples lignes fines, sans cartes autour des sections.
-- [ ] Definir le comportement responsive : desktop avec sidebar a partir du breakpoint choisi, mobile sans sidebar sous ce breakpoint, aucune superposition entre recherche, categories, grille et toast.
-- [ ] Definir le mode sombre : fond principal quasi noir, panneaux noir bleute, texte blanc casse, texte secondaire gris, bordures fines translucides, accent bleu uniquement pour l'etat actif.
-- [ ] Definir le mode clair : fond clair neutre, panneau blanc ou gris tres leger, texte presque noir, texte secondaire gris, bordures fines claires, meme accent bleu que le mode sombre.
-- [ ] Definir le mode systeme : appliquer automatiquement le theme clair ou sombre selon `prefers-color-scheme`, sauf si l'utilisateur a choisi explicitement un theme.
-- [ ] Definir les controles de theme : choix `Clair`, `Sombre`, `Systeme`, accessibles depuis la barre superieure desktop et depuis le menu mobile.
-- [ ] Definir le controle de langue : selecteur compact sur desktop, entree dans le menu mobile, libelle court du type `FR`, `EN`, `DE`, `IT`, `ES`, `PT`.
-- [ ] Definir le mode Composer comme optionnel : jamais affiche par defaut, active par un bouton ou toggle, barre de composition escamotable en bas sans prendre l'espace principal inutilement.
-- [ ] Definir les etats interactifs : actif, hover, focus clavier, pressed, disabled, menu ouvert, toast visible, recherche vide, recherche sans resultat.
-- [ ] Definir les dimensions cibles : largeur sidebar desktop compacte, hauteur de recherche, taille des icones de categories, taille des emojis desktop, taille des emojis mobile, espacements de grille.
-- [ ] Definir les contraintes typographiques : police systeme, titres compacts, labels lisibles, aucune taille de texte basee sur la largeur viewport, aucun texte qui deborde des controles.
-- [ ] Produire une checklist de validation visuelle : comparer implementation vs maquette sur desktop sombre, mobile sombre, desktop clair et mobile clair.
+- [x] Analyser la maquette source `DESIGN.png` et noter les invariants visuels a conserver : interface minimaliste, compacte, sombre par defaut, peu de bordures, tres peu d'ombres, aucun encadrement inutile autour des blocs.
+- [x] Definir la structure desktop : application centree dans la page, panneau principal sombre, sidebar compacte a gauche, separation verticale fine, zone de contenu a droite.
+- [x] Definir la sidebar desktop compacte : logo `EmojiDeck` en haut, categories avec icone + libelle, item actif legerement surligne, separateur fin, entrees `Recents` et `Favoris` en bas de groupe.
+- [x] Definir la barre superieure desktop : recherche tres visible en haut de la zone principale, controle de theme `Theme` + icone, selecteur de langue compact, alignement horizontal sobre.
+- [x] Definir la zone de contenu desktop : titre de categorie, grille emoji large et aeree, scroll interne discret, emojis sans cartes individuelles, boutons invisibles sauf etat hover/focus.
+- [x] Definir le feedback de copie : toast flottant bas-centre, compact, avec icone de confirmation et texte court `Copie !`.
+- [x] Definir la version mobile : header compact avec titre `EmojiDeck` et bouton menu, recherche pleine largeur sous le header, barre de categories sous forme d'icones, contenu en colonne.
+- [x] Definir la navigation mobile par icones : categories principales visibles horizontalement, icone active marquee par couleur et soulignement fin, pas de libelles permanents pour garder la compacite.
+- [x] Definir les sections mobiles : `Recents`, `Favoris`, puis categorie active, separees par de simples lignes fines, sans cartes autour des sections.
+- [x] Definir le comportement responsive : desktop avec sidebar a partir du breakpoint choisi, mobile sans sidebar sous ce breakpoint, aucune superposition entre recherche, categories, grille et toast.
+- [x] Definir le mode sombre : fond principal quasi noir, panneaux noir bleute, texte blanc casse, texte secondaire gris, bordures fines translucides, accent bleu uniquement pour l'etat actif.
+- [x] Definir le mode clair : fond clair neutre, panneau blanc ou gris tres leger, texte presque noir, texte secondaire gris, bordures fines claires, meme accent bleu que le mode sombre.
+- [x] Definir le mode systeme : appliquer automatiquement le theme clair ou sombre selon `prefers-color-scheme`, sauf si l'utilisateur a choisi explicitement un theme.
+- [x] Definir les controles de theme : choix `Clair`, `Sombre`, `Systeme`, accessibles depuis la barre superieure desktop et depuis le menu mobile.
+- [x] Definir le controle de langue : selecteur compact sur desktop, entree dans le menu mobile, libelle court du type `FR`, `EN`, `DE`, `IT`, `ES`, `PT`.
+- [x] Definir le mode Composer comme optionnel : jamais affiche par defaut, active par un bouton ou toggle, barre de composition escamotable en bas sans prendre l'espace principal inutilement.
+- [x] Definir les etats interactifs : actif, hover, focus clavier, pressed, disabled, menu ouvert, toast visible, recherche vide, recherche sans resultat.
+- [x] Definir les dimensions cibles : largeur sidebar desktop compacte, hauteur de recherche, taille des icones de categories, taille des emojis desktop, taille des emojis mobile, espacements de grille.
+- [x] Definir les contraintes typographiques : police systeme, titres compacts, labels lisibles, aucune taille de texte basee sur la largeur viewport, aucun texte qui deborde des controles.
+- [x] Produire une checklist de validation visuelle : comparer implementation vs maquette sur desktop sombre, mobile sombre, desktop clair et mobile clair.
 
 ## Phase 1 - Cadrage technique et donnees
 
