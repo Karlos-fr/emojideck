@@ -1,0 +1,17 @@
+{
+  "unicodeVersion": "17.0.0",
+  "cldrVersion": "48.2.0",
+  "locales": [
+    "fr",
+    "en"
+  ],
+  "emojiCount": 1914,
+  "skinToneVariantCount": 2030,
+  "sources": [
+    "https://www.unicode.org/Public/17.0.0/emoji/emoji-test.txt",
+    "https://raw.githubusercontent.com/unicode-org/cldr-json/48.2.0/cldr-json/cldr-annotations-full/annotations/fr/annotations.json",
+    "https://raw.githubusercontent.com/unicode-org/cldr-json/48.2.0/cldr-json/cldr-annotations-derived-full/annotationsDerived/fr/annotations.json",
+    "https://raw.githubusercontent.com/unicode-org/cldr-json/48.2.0/cldr-json/cldr-annotations-full/annotations/en/annotations.json",
+    "https://raw.githubusercontent.com/unicode-org/cldr-json/48.2.0/cldr-json/cldr-annotations-derived-full/annotationsDerived/en/annotations.json"
+  ]
+}

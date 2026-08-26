@@ -3,11 +3,11 @@ import {
   emojiCategories,
   getEmojiById,
   getEmojisByCategory,
-  sampleEmojis,
+  emojis,
   type EmojiCategoryId,
 } from './emojis';
 
-describe('emoji seed data', () => {
+describe('generated emoji data', () => {
   it('defines the compact category set used by the first UI', () => {
     expect(emojiCategories.map((category) => category.id)).toEqual([
       'faces',
@@ -19,14 +19,18 @@ describe('emoji seed data', () => {
     ]);
   });
 
-  it('keeps every sample emoji compatible with the internal data contract', () => {
+  it('imports the complete Unicode base set', () => {
+    expect(emojis.length).toBeGreaterThan(1_800);
+    expect(new Set(emojis.map((entry) => entry.id)).size).toBe(emojis.length);
+    expect(new Set(emojis.map((entry) => entry.emoji)).size).toBe(emojis.length);
+  });
+
+  it('keeps every generated emoji compatible with the internal data contract', () => {
     const categoryIds = new Set<EmojiCategoryId>(
       emojiCategories.map((category) => category.id),
     );
 
-    expect(sampleEmojis.length).toBeGreaterThanOrEqual(24);
-
-    for (const entry of sampleEmojis) {
+    for (const entry of emojis) {
       expect(entry.id).toMatch(/^[a-z0-9-]+$/);
       expect(entry.emoji.length).toBeGreaterThan(0);
       expect(categoryIds.has(entry.category)).toBe(true);
@@ -38,6 +42,18 @@ describe('emoji seed data', () => {
       expect(entry.codepoints.every((codepoint) => /^U\+[0-9A-F]+$/.test(codepoint))).toBe(true);
       expect(entry.supportsSkinTone).toBe(Boolean(entry.skinToneVariants?.length));
     }
+  });
+
+  it('attaches skin-tone variants to their base emoji instead of listing them separately', () => {
+    const thumbsUp = getEmojiById('thumbs-up');
+    const handshake = getEmojiById('handshake');
+
+    expect(thumbsUp?.skinToneVariants).toEqual(
+      expect.arrayContaining(['👍🏻', '👍🏼', '👍🏽', '👍🏾', '👍🏿']),
+    );
+    expect(emojis.some((entry) => entry.emoji === '👍🏻')).toBe(false);
+    expect(handshake?.skinToneVariants).toContain('🫱🏻‍🫲🏼');
+    expect(emojis.filter((entry) => entry.supportsSkinTone).length).toBeGreaterThan(100);
   });
 
   it('can retrieve one emoji by id', () => {

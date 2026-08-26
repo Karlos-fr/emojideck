@@ -133,13 +133,13 @@ Objectif : rendre l'outil rapide et utilisable sans souris.
 
 Objectif : remplacer le jeu de donnees initial par des donnees maintenables et localisables.
 
-- [ ] Identifier les fichiers Unicode et CLDR necessaires.
-- [ ] Creer un script de transformation au build.
-- [ ] Generer un fichier de donnees par langue.
-- [ ] Generer les noms, mots-cles, categories et variantes.
-- [ ] Verifier le nombre total d'emojis importes.
-- [ ] Ajouter un controle de coherence sur les emojis sans nom ou sans categorie.
-- [ ] Documenter la commande de regeneration des donnees.
+- [x] Identifier les fichiers Unicode et CLDR necessaires.
+- [x] Creer un script de transformation au build.
+- [x] Generer un fichier de donnees par langue.
+- [x] Generer les noms, mots-cles, categories et variantes.
+- [x] Verifier le nombre total d'emojis importes.
+- [x] Ajouter un controle de coherence sur les emojis sans nom ou sans categorie.
+- [x] Documenter la commande de regeneration des donnees.
 
 ## Phase 9 - Multilingue complet
 

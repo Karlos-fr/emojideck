@@ -2,7 +2,7 @@ import {
   emojiCategories,
   getEmojiById,
   getEmojisByCategory,
-  sampleEmojis,
+  emojis,
   type EmojiCategory,
   type EmojiCategoryId,
 } from './data/emojis';
@@ -458,7 +458,7 @@ export function createEmojiDeckApp(root: HTMLElement): void {
     const trimmedQuery = state.query.trim();
     const isSearching = trimmedQuery.length > 0;
     const visibleEmojis = isSearching
-      ? searchEmojis(sampleEmojis, trimmedQuery, 'fr')
+      ? searchEmojis(emojis, trimmedQuery, 'fr')
       : isCollection
         ? getCollectionEmojis(activeView)
         : getEmojisByCategory(activeView);
