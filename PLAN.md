@@ -2,6 +2,18 @@
 
 Ce plan transforme l'idee de `CHATGPT.md` en phases livrables. Chaque phase doit produire un resultat utilisable ou une decision claire avant de passer a la suivante.
 
+## Definition de termine
+
+Une phase est terminee uniquement lorsque tous les points suivants sont satisfaits :
+
+- les nouveaux comportements sont couverts par des tests automatises pertinents ;
+- la suite de tests complete passe sans erreur ;
+- le controle TypeScript et le build de production reussissent ;
+- les parcours concernes sont verifies sur desktop et mobile ;
+- les changements visuels sont compares a la specification de design dans les themes disponibles ;
+- les fonctions deja livrees ne subissent pas de regression ;
+- le plan et la documentation technique sont mis a jour si le comportement ou l'architecture evolue.
+
 ## Phase 0 - Design vierge
 
 Objectif : restituer la maquette `DESIGN.png` de maniere la plus fidele possible, en version desktop, mobile, theme sombre, theme clair et mode systeme.
@@ -41,7 +53,7 @@ Objectif : poser les fondations du projet statique, leger, sans backend, sans co
 
 ## Phase 2 - MVP clavier emoji
 
-Objectif : livrer une premiere version utilisable pour chercher et copier rapidement un emoji.
+Objectif : livrer une premiere version utilisable pour parcourir et copier rapidement un emoji.
 
 - [x] Construire la mise en page principale : header, recherche, categories, grille.
 - [x] Afficher uniquement la categorie active.
@@ -58,14 +70,17 @@ Objectif : livrer une premiere version utilisable pour chercher et copier rapide
 
 Objectif : permettre de trouver un emoji en francais, avec un fallback simple en anglais si disponible.
 
-- [ ] Indexer les noms et mots-cles du jeu de donnees initial.
-- [ ] Ajouter une recherche instantanee.
-- [ ] Chercher sans tenir compte de la casse.
-- [ ] Chercher sans bloquer sur les accents courants, par exemple `coeur` et `cœur`.
-- [ ] Afficher les resultats dans une grille unique quand une recherche est active.
-- [ ] Afficher un etat vide sobre quand aucun emoji ne correspond.
-- [ ] Conserver le clic pour copier dans les resultats de recherche.
-- [ ] Tester les requetes prioritaires : `rire`, `coeur`, `voiture`, `feu`.
+- [x] Indexer les noms et mots-cles du jeu de donnees initial.
+- [x] Ajouter une recherche instantanee.
+- [x] Chercher sans tenir compte de la casse.
+- [x] Chercher sans bloquer sur les accents courants, par exemple `coeur` et `cœur`.
+- [x] Afficher les resultats dans une grille unique quand une recherche est active.
+- [x] Afficher un etat vide sobre quand aucun emoji ne correspond.
+- [x] Conserver le clic pour copier dans les resultats de recherche.
+- [x] Conserver le meme champ, le focus et la position du curseur pendant la saisie.
+- [x] Mettre a jour uniquement la zone de resultats pendant la recherche.
+- [x] Afficher la requete comme du texte sans interpreter de HTML utilisateur.
+- [x] Tester les requetes prioritaires : `rire`, `coeur`, `voiture`, `feu`.
 
 ## Phase 4 - Recents
 
@@ -79,20 +94,7 @@ Objectif : accelerer l'usage quotidien avec les emojis utilises le plus recemmen
 - [ ] Permettre la copie depuis les recents.
 - [ ] Verifier que les recents persistent apres rechargement.
 
-## Phase 5 - Teintes de peau
-
-Objectif : eviter les grandes listes de variantes tout en gardant les options accessibles.
-
-- [ ] Identifier les emojis qui acceptent des variantes de peau.
-- [ ] Stocker les variantes disponibles dans le format de donnees interne.
-- [ ] Ajouter un menu de variantes sur appui long, clic secondaire ou bouton discret.
-- [ ] Copier directement la variante choisie.
-- [ ] Ajouter un choix de teinte de peau par defaut.
-- [ ] Enregistrer la teinte par defaut dans `localStorage`.
-- [ ] Appliquer la teinte par defaut aux emojis compatibles dans la grille.
-- [ ] Verifier que les variantes mixtes ne deviennent pas des categories dediees.
-
-## Phase 6 - Favoris
+## Phase 5 - Favoris
 
 Objectif : permettre a l'utilisateur de construire une petite collection personnelle.
 
@@ -105,7 +107,7 @@ Objectif : permettre a l'utilisateur de construire une petite collection personn
 - [ ] Prevoir une interaction mobile confortable pour ajouter un favori.
 - [ ] Verifier que les favoris persistent apres rechargement.
 
-## Phase 7 - Theme clair, sombre et systeme
+## Phase 6 - Theme clair, sombre et systeme
 
 Objectif : proposer un theme confortable sans complexifier l'application.
 
@@ -116,7 +118,7 @@ Objectif : proposer un theme confortable sans complexifier l'application.
 - [ ] Donner la priorite au choix utilisateur sur la preference systeme.
 - [ ] Verifier les contrastes des textes, boutons, grilles et tooltips.
 
-## Phase 8 - Navigation clavier et accessibilite
+## Phase 7 - Navigation clavier et accessibilite
 
 Objectif : rendre l'outil rapide et utilisable sans souris.
 
@@ -125,10 +127,9 @@ Objectif : rendre l'outil rapide et utilisable sans souris.
 - [ ] Permettre la copie avec `Enter` ou `Space`.
 - [ ] Garder un focus visible et propre.
 - [ ] Verifier le comportement de la recherche au clavier.
-- [ ] Verifier que les menus de variantes sont utilisables au clavier.
 - [ ] Tester avec un lecteur d'ecran au moins sur les parcours principaux.
 
-## Phase 9 - Import Unicode / CLDR
+## Phase 8 - Import Unicode / CLDR
 
 Objectif : remplacer le jeu de donnees initial par des donnees maintenables et localisables.
 
@@ -140,7 +141,7 @@ Objectif : remplacer le jeu de donnees initial par des donnees maintenables et l
 - [ ] Ajouter un controle de coherence sur les emojis sans nom ou sans categorie.
 - [ ] Documenter la commande de regeneration des donnees.
 
-## Phase 10 - Multilingue complet
+## Phase 9 - Multilingue complet
 
 Objectif : proposer une interface et une recherche localisees sans telecharger toutes les langues inutilement.
 
@@ -154,6 +155,20 @@ Objectif : proposer une interface et une recherche localisees sans telecharger t
 - [ ] Prevoir un fallback anglais si une langue ou une traduction manque.
 - [ ] Verifier la recherche dans chaque langue cible.
 - [ ] Verifier que le changement de langue ne supprime pas recents, favoris ou theme.
+
+## Phase 10 - Teintes de peau
+
+Objectif : exploiter les variantes Unicode / CLDR sans creer de grandes listes redondantes.
+
+- [ ] Identifier les emojis qui acceptent des variantes de peau dans les donnees generees.
+- [ ] Stocker les variantes disponibles dans le format de donnees interne.
+- [ ] Ajouter un menu de variantes sur appui long, clic secondaire ou bouton discret.
+- [ ] Rendre le menu de variantes utilisable au clavier et avec un lecteur d'ecran.
+- [ ] Copier directement la variante choisie.
+- [ ] Ajouter un choix de teinte de peau par defaut.
+- [ ] Enregistrer la teinte par defaut dans `localStorage`.
+- [ ] Appliquer la teinte par defaut aux emojis compatibles dans la grille.
+- [ ] Verifier que les variantes mixtes ne deviennent pas des categories dediees.
 
 ## Phase 11 - PWA et offline
 

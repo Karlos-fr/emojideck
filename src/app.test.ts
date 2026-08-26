@@ -28,6 +28,14 @@ describe('EmojiDeck MVP app', () => {
     expect(document.querySelector('[data-composer-toggle]')).toBeNull();
   });
 
+  it('marks controls from future phases as unavailable', () => {
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+
+    expect(document.querySelector<HTMLButtonElement>('[data-theme-mode]')?.disabled).toBe(true);
+    expect(document.querySelector<HTMLButtonElement>('[data-language-select]')?.disabled).toBe(true);
+    expect(document.querySelector<HTMLButtonElement>('.mobile-menu-button')?.disabled).toBe(true);
+  });
+
   it('shows only the active category in the main grid', () => {
     createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
 
@@ -60,6 +68,69 @@ describe('EmojiDeck MVP app', () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('😂');
     expect(await findToast()).toBe('Copie !');
   });
+
+  it('shows search results in a single grid while a query is active', () => {
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+
+    typeSearch('coeur');
+
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Recherche');
+    expect(document.querySelector('[data-search-summary]')?.textContent).toBe('2 resultats pour "coeur"');
+    expect(document.querySelector<HTMLButtonElement>('[data-emoji-id="red-heart"]')).toBeTruthy();
+    expect(
+      Array.from(document.querySelectorAll<HTMLButtonElement>('[data-emoji-button]')).every(
+        (button) => button.dataset.searchResult === 'true',
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps the same search field, focus and cursor position while typing', () => {
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+
+    const input = document.querySelector<HTMLInputElement>('input[type="search"]');
+
+    input?.focus();
+    if (input) {
+      input.value = 'rire';
+    }
+    input?.setSelectionRange(2, 2);
+    input?.dispatchEvent(new InputEvent('input', { bubbles: true }));
+
+    const focusedInput = document.activeElement as HTMLInputElement | null;
+    expect(focusedInput).toBe(input);
+    expect(focusedInput?.value).toBe('rire');
+    expect(focusedInput?.selectionStart).toBe(2);
+  });
+
+  it('renders the search query as text instead of interpreting HTML', () => {
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+
+    const query = '</p><img data-injected="true">';
+    typeSearch(query);
+
+    expect(document.querySelector('[data-injected]')).toBeNull();
+    expect(document.querySelector('[data-empty-state]')?.textContent).toContain(query);
+  });
+
+  it('keeps copy behavior available from search results', async () => {
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+
+    typeSearch('feu');
+    document.querySelector<HTMLButtonElement>('[data-emoji-id="fire"]')?.click();
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('🔥');
+    expect(await findToast()).toBe('Copie !');
+  });
+
+  it('shows a sober empty state when no emoji matches the query', () => {
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+
+    typeSearch('zzzz');
+
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Recherche');
+    expect(document.querySelector('[data-empty-state]')?.textContent).toBe('Aucun emoji trouve pour "zzzz"');
+    expect(document.querySelectorAll('[data-emoji-button]').length).toBe(0);
+  });
 });
 
 function screenText(text: string): Element | null {
@@ -69,4 +140,17 @@ function screenText(text: string): Element | null {
 async function findToast(): Promise<string | null> {
   await Promise.resolve();
   return document.querySelector('[role="status"]')?.textContent?.trim() ?? null;
+}
+
+function typeSearch(
+  query: string,
+  input = document.querySelector<HTMLInputElement>('input[type="search"]'),
+): void {
+
+  if (!input) {
+    throw new Error('Search input not found');
+  }
+
+  input.value = query;
+  input.dispatchEvent(new InputEvent('input', { bubbles: true }));
 }

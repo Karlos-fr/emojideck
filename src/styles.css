@@ -315,6 +315,12 @@ button {
   outline-offset: 3px;
 }
 
+.plain-control:disabled,
+.mobile-menu-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 @media (max-width: 899px) {
   #app {
     padding: 20px;
