@@ -65,17 +65,18 @@ export function renderEmojiResults(
   grid.setAttribute('aria-label', view.gridLabel);
   elements.results.append(grid);
 
+  const batchSize = getRenderBatchSize(grid);
+
   if (typeof IntersectionObserver === 'undefined' || view.emojis.length <= 80) {
-    appendEmojiCells(grid, view.emojis, view, 0, view.emojis.length);
+    appendEmojiCells(grid, view.emojis, view, 0, view.emojis.length, batchSize);
     return;
   }
 
-  const batchSize = matchMedia('(max-width: 899px)').matches ? 20 : 24;
   const sentinel = document.createElement('div');
   sentinel.className = 'emoji-grid-sentinel';
   sentinel.setAttribute('aria-hidden', 'true');
   grid.setAttribute('aria-busy', 'true');
-  appendEmojiCells(grid, view.emojis, view, 0, batchSize);
+  appendEmojiCells(grid, view.emojis, view, 0, batchSize, batchSize);
   elements.results.append(sentinel);
 
   const observer = new IntersectionObserver(
@@ -111,7 +112,7 @@ export function revealMoreEmojiResults(results: HTMLElement): void {
   }
 
   const end = Math.min(state.index + state.batchSize, state.entries.length);
-  appendEmojiCells(state.grid, state.entries, state, state.index, end);
+  appendEmojiCells(state.grid, state.entries, state, state.index, end, state.batchSize);
   state.index = end;
 
   if (state.index >= state.entries.length) {
@@ -132,7 +133,14 @@ export function completeEmojiResults(results: HTMLElement): void {
     return;
   }
 
-  appendEmojiCells(state.grid, state.entries, state, state.index, state.entries.length);
+  appendEmojiCells(
+    state.grid,
+    state.entries,
+    state,
+    state.index,
+    state.entries.length,
+    state.batchSize,
+  );
   state.index = state.entries.length;
   disposeEmojiResults(results);
 }
@@ -155,22 +163,64 @@ function appendEmojiCells(
   view: Pick<EmojiResultsView, 'query' | 'favoriteIds' | 'skinTonePreference' | 'messages'> | ProgressiveGridState,
   start: number,
   end: number,
+  renderBatchSize: number,
 ): void {
   const isSearchResult = 'isSearchResult' in view ? view.isSearchResult : view.query !== null;
   const fragment = document.createDocumentFragment();
-  for (let index = start; index < end; index += 1) {
-    const entry = entries[index];
-    fragment.append(
-      createEmojiCell(
-        entry,
-        isSearchResult,
-        view.favoriteIds.has(entry.id),
-        view.skinTonePreference,
-        view.messages,
-      ),
-    );
+
+  if (isFirefox()) {
+    for (let index = start; index < end; index += 1) {
+      const entry = entries[index];
+      fragment.append(
+        createEmojiCell(
+          entry,
+          isSearchResult,
+          view.favoriteIds.has(entry.id),
+          view.skinTonePreference,
+          view.messages,
+        ),
+      );
+    }
+    grid.append(fragment);
+    return;
+  }
+
+  for (let batchStart = start; batchStart < end; batchStart += renderBatchSize) {
+    const batch = document.createElement('div');
+    const batchEnd = Math.min(batchStart + renderBatchSize, end);
+    batch.className = 'emoji-grid-batch';
+
+    for (let index = batchStart; index < batchEnd; index += 1) {
+      const entry = entries[index];
+      batch.append(
+        createEmojiCell(
+          entry,
+          isSearchResult,
+          view.favoriteIds.has(entry.id),
+          view.skinTonePreference,
+          view.messages,
+        ),
+      );
+    }
+
+    fragment.append(batch);
   }
   grid.append(fragment);
+}
+
+function isFirefox(): boolean {
+  return typeof navigator !== 'undefined' && /Firefox\//.test(navigator.userAgent);
+}
+
+function getRenderBatchSize(grid: HTMLDivElement): number {
+  const isMobile = typeof matchMedia === 'function' && matchMedia('(max-width: 899px)').matches;
+  if (isMobile) {
+    return 20;
+  }
+
+  const width = grid.clientWidth;
+  const columns = width > 0 ? Math.max(1, Math.floor((width + 20) / 78)) : 10;
+  return columns * 2;
 }
 
 function createEmojiCell(

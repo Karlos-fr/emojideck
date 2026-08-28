@@ -954,12 +954,14 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
     root.querySelectorAll<HTMLButtonElement>('[data-layout-toggle]').forEach((button) => {
       button.setAttribute('aria-label', label);
       button.setAttribute('aria-pressed', String(state.isExpanded));
+      button.dataset.tooltip = label;
       button.title = label;
       button.innerHTML = button.classList.contains('mobile-layout-toggle')
         ? `<span>${label}</span>${renderIcon(icon)}`
         : renderIcon(icon);
     });
     renderLucideIcons();
+    updateResults();
   }
 
   function setLanguageSelectsDisabled(disabled: boolean): void {
@@ -1100,6 +1102,7 @@ function renderLayoutToggle(isExpanded: boolean, text: Messages): string {
       data-layout-toggle
       aria-label="${label}"
       aria-pressed="${isExpanded}"
+      data-tooltip="${label}"
       title="${label}"
     >${renderIcon(isExpanded ? 'minimize-2' : 'maximize-2')}</button>
   `;

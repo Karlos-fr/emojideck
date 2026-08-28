@@ -62,7 +62,8 @@ test('renders large categories progressively and completes them for keyboard End
     return document.querySelectorAll('[data-emoji-button]').length;
   });
 
-  expect(initialCount).toBe(24);
+  expect(initialCount).toBeGreaterThan(0);
+  expect(initialCount).toBeLessThan(388);
   const firstEmoji = page.locator('[data-emoji-button]').first();
   await firstEmoji.focus();
   await firstEmoji.press('End');

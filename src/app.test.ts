@@ -74,6 +74,9 @@ describe('EmojiDeck MVP app', () => {
     expect(document.querySelector('[data-composer-toggle]')).toBeNull();
     expect(document.querySelector('[data-category-id="all"]')).toBeTruthy();
     expect(document.querySelector('[data-lucide="layout-grid"]')).toBeTruthy();
+    expect(document.querySelector('.layout-toggle')?.getAttribute('data-tooltip')).toBe(
+      "Agrandir l’application",
+    );
   });
 
   it('expands the app with equal viewport margins and persists the preference', () => {

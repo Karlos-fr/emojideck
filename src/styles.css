@@ -316,6 +316,7 @@ button {
 }
 
 .layout-toggle {
+  position: relative;
   width: 38px;
   height: 38px;
   flex: 0 0 38px;
@@ -323,6 +324,35 @@ button {
   place-items: center;
   border-radius: 8px;
   color: var(--color-text-muted);
+}
+
+.layout-toggle::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  z-index: 6;
+  width: max-content;
+  max-width: 190px;
+  padding: 7px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-hover);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.25;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-3px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.layout-toggle:hover::after,
+.layout-toggle:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .layout-toggle:hover,
@@ -461,6 +491,16 @@ button {
   grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
   gap: 22px 20px;
   align-items: center;
+}
+
+.emoji-grid-batch {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  gap: 22px 20px;
+  align-items: center;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 142px;
 }
 
 .emoji-grid-sentinel {
@@ -865,6 +905,12 @@ button {
   .emoji-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 14px 11px;
+  }
+
+  .emoji-grid-batch {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px 11px;
+    contain-intrinsic-size: auto 234px;
   }
 
   .emoji-button {
