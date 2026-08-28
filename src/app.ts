@@ -5,10 +5,30 @@ import {
   type EmojiCatalog,
   type EmojiCategoryId,
 } from './data/emojis';
+import {
+  Clock3,
+  createIcons,
+  Flag,
+  LayoutGrid,
+  Lightbulb,
+  Maximize2,
+  Menu,
+  Minimize2,
+  PawPrint,
+  Plane,
+  Search,
+  Shapes,
+  Smile,
+  Star,
+  Trophy,
+  Users,
+  Utensils,
+} from 'lucide';
 import { searchEmojis } from './data/search';
 import { resolveLocale, saveLocale, supportedLocales, type LocaleCode } from './i18n/language';
 import { messages, type Messages } from './i18n/messages';
 import { createFavoriteEmojiStore } from './storage/favoriteEmojis';
+import { createLayoutStore } from './storage/layout';
 import { createRecentEmojiStore } from './storage/recentEmojis';
 import {
   createSkinToneStore,
@@ -49,6 +69,7 @@ interface EmojiDeckState {
   recentIds: string[];
   favoriteIds: string[];
   skinTonePreference: SkinTonePreference;
+  isExpanded: boolean;
   toastMessage: string | null;
 }
 
@@ -116,6 +137,7 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
   const browserStorage = getBrowserStorage();
   const recentStore = createRecentEmojiStore(browserStorage);
   const favoriteStore = createFavoriteEmojiStore(browserStorage);
+  const layoutStore = createLayoutStore(browserStorage);
   const skinToneStore = createSkinToneStore(browserStorage);
   const themeController = createThemeController({
     root: document.documentElement,
@@ -132,6 +154,7 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
     recentIds: recentStore.read(),
     favoriteIds: favoriteStore.read(),
     skinTonePreference: skinToneStore.read(),
+    isExpanded: layoutStore.readExpanded(),
     toastMessage: null,
   };
   let languageRequest = 0;
@@ -154,7 +177,7 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
     }
 
     root.innerHTML = `
-      <main class="app-shell" aria-label="EmojiDeck">
+      <main class="app-shell${state.isExpanded ? ' is-expanded' : ''}" aria-label="EmojiDeck">
         <aside class="desktop-sidebar" aria-label="${text.categoriesLabel}">
           <a class="brand" href="#" aria-label="${text.home}">EmojiDeck</a>
           <nav class="sidebar-nav" aria-label="${text.categoriesLabel}">
@@ -163,11 +186,11 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
           <div class="sidebar-separator" role="presentation"></div>
           <nav class="sidebar-nav utility-nav" aria-label="${text.collectionsLabel}">
             <button class="sidebar-item" type="button" data-collection-id="recents" disabled>
-              <span class="nav-icon" aria-hidden="true">◷</span>
+              <span class="nav-icon" aria-hidden="true">${renderIcon('clock-3')}</span>
               <span>${text.recents}</span>
             </button>
             <button class="sidebar-item" type="button" data-collection-id="favorites" disabled>
-              <span class="nav-icon" aria-hidden="true">☆</span>
+              <span class="nav-icon" aria-hidden="true">${renderIcon('star')}</span>
               <span>${text.favorites}</span>
             </button>
           </nav>
@@ -189,6 +212,7 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
                 <span>${text.language}</span>
                 ${renderLanguageSelect('desktop', state.locale, text)}
               </label>
+              ${renderLayoutToggle(state.isExpanded, text)}
             </div>
           </header>
 
@@ -200,13 +224,14 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
               aria-label="${text.openMenu}"
               aria-controls="mobile-settings"
               aria-expanded="false"
-            >☰</button>
+            >${renderIcon('menu')}</button>
           </header>
           <div id="mobile-settings" class="mobile-settings" data-mobile-menu hidden>
             <label class="mobile-setting-row">
               <span>${text.theme}</span>
               ${renderThemeSelect('mobile', themeController.getMode(), text)}
             </label>
+            ${renderMobileLayoutToggle(state.isExpanded, text)}
             <label class="mobile-setting-row">
               <span>${text.language}</span>
               ${renderLanguageSelect('mobile', state.locale, text)}
@@ -238,6 +263,7 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
     root.querySelectorAll<HTMLInputElement>('input[type="search"]').forEach((input) => {
       input.value = state.query;
     });
+    renderLucideIcons();
     updateView();
   }
 
@@ -601,6 +627,15 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
         return;
       }
 
+      const layoutButton = target.closest<HTMLButtonElement>('[data-layout-toggle]');
+
+      if (layoutButton) {
+        state.isExpanded = !state.isExpanded;
+        layoutStore.writeExpanded(state.isExpanded);
+        syncExpandedLayout();
+        return;
+      }
+
       const categoryButton = target.closest<HTMLButtonElement>('[data-category-id]');
 
       if (categoryButton?.dataset.categoryId) {
@@ -777,8 +812,8 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
 
   function updateCollectionNavigation(): void {
     const text = getMessages();
-    updateCollectionButton('recents', getRecentEmojis().length > 0, text.recents, '◷');
-    updateCollectionButton('favorites', getFavoriteEmojis().length > 0, text.favorites, '☆');
+    updateCollectionButton('recents', getRecentEmojis().length > 0, text.recents, 'clock-3');
+    updateCollectionButton('favorites', getFavoriteEmojis().length > 0, text.favorites, 'star');
   }
 
   function updateCollectionButton(
@@ -807,6 +842,7 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
     if (hasItems && mobileBar && !mobileButton) {
       mobileButton = createMobileCollectionButton(collectionId, label, icon);
       mobileBar.append(mobileButton);
+      renderLucideIcons();
     } else if (!hasItems && mobileButton) {
       mobileButton.remove();
       return;
@@ -826,11 +862,12 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
     const activeCategory = getCategory(isCollection ? state.lastCategory : activeView);
     const trimmedQuery = state.query.trim();
     const isSearching = trimmedQuery.length > 0;
+    const viewEmojis = isCollection
+      ? getCollectionEmojis(activeView)
+      : state.catalog.getByCategory(activeView);
     const visibleEmojis = isSearching
-      ? searchEmojis(state.catalog.emojis, trimmedQuery)
-      : isCollection
-        ? getCollectionEmojis(activeView)
-        : state.catalog.getByCategory(activeView);
+      ? searchEmojis(viewEmojis, trimmedQuery)
+      : viewEmojis;
     const sectionLabel = isCollection
       ? state.activeView === 'recents'
         ? text.recents
@@ -904,6 +941,25 @@ export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptio
     root.querySelectorAll<HTMLSelectElement>('[data-skin-tone-select]').forEach((select) => {
       select.value = state.skinTonePreference;
     });
+  }
+
+  function syncExpandedLayout(): void {
+    const text = getMessages();
+    const label = state.isExpanded ? text.collapseApp : text.expandApp;
+    const icon = state.isExpanded ? 'minimize-2' : 'maximize-2';
+    root.querySelector<HTMLElement>('.app-shell')?.classList.toggle(
+      'is-expanded',
+      state.isExpanded,
+    );
+    root.querySelectorAll<HTMLButtonElement>('[data-layout-toggle]').forEach((button) => {
+      button.setAttribute('aria-label', label);
+      button.setAttribute('aria-pressed', String(state.isExpanded));
+      button.title = label;
+      button.innerHTML = button.classList.contains('mobile-layout-toggle')
+        ? `<span>${label}</span>${renderIcon(icon)}`
+        : renderIcon(icon);
+    });
+    renderLucideIcons();
   }
 
   function setLanguageSelectsDisabled(disabled: boolean): void {
@@ -1002,10 +1058,71 @@ function scheduleIdleWork(callback: () => void): void {
   }
 }
 
+const lucideIcons = {
+  Clock3,
+  Flag,
+  LayoutGrid,
+  Lightbulb,
+  Maximize2,
+  Menu,
+  Minimize2,
+  PawPrint,
+  Plane,
+  Search,
+  Shapes,
+  Smile,
+  Star,
+  Trophy,
+  Users,
+  Utensils,
+};
+
+function renderIcon(name: string): string {
+  return `<i data-lucide="${name}"></i>`;
+}
+
+function renderLucideIcons(): void {
+  createIcons({
+    icons: lucideIcons,
+    attrs: {
+      'aria-hidden': 'true',
+      'stroke-width': 1.8,
+    },
+  });
+}
+
+function renderLayoutToggle(isExpanded: boolean, text: Messages): string {
+  const label = isExpanded ? text.collapseApp : text.expandApp;
+  return `
+    <button
+      class="layout-toggle"
+      type="button"
+      data-layout-toggle
+      aria-label="${label}"
+      aria-pressed="${isExpanded}"
+      title="${label}"
+    >${renderIcon(isExpanded ? 'minimize-2' : 'maximize-2')}</button>
+  `;
+}
+
+function renderMobileLayoutToggle(isExpanded: boolean, text: Messages): string {
+  const label = isExpanded ? text.collapseApp : text.expandApp;
+  return `
+    <button
+      class="mobile-setting-row mobile-layout-toggle"
+      type="button"
+      data-layout-toggle
+      aria-label="${label}"
+      aria-pressed="${isExpanded}"
+      title="${label}"
+    ><span>${label}</span>${renderIcon(isExpanded ? 'minimize-2' : 'maximize-2')}</button>
+  `;
+}
+
 function renderSearch(text: Messages): string {
   return `
     <label class="search-field">
-      <span aria-hidden="true">⌕</span>
+      <span class="search-icon" aria-hidden="true">${renderIcon('search')}</span>
       <input type="search" placeholder="${text.searchPlaceholder}" aria-label="${text.searchPlaceholder}" />
       <kbd>Ctrl F</kbd>
     </label>
@@ -1108,7 +1225,7 @@ function renderSidebarButton(
       data-category-id="${category.id}"
       aria-current="${isActive ? 'page' : 'false'}"
     >
-      <span class="nav-icon" aria-hidden="true">${category.icon}</span>
+      <span class="nav-icon" aria-hidden="true">${renderIcon(category.icon)}</span>
       <span>${text.categories[category.id]}</span>
     </button>
   `;
@@ -1129,7 +1246,7 @@ function renderMobileCategoryButton(
       aria-label="${text.categories[category.id]}"
       aria-current="${isActive ? 'page' : 'false'}"
     >
-      <span aria-hidden="true">${category.icon}</span>
+      <span aria-hidden="true">${renderIcon(category.icon)}</span>
     </button>
   `;
 }
@@ -1137,7 +1254,7 @@ function renderMobileCategoryButton(
 function createMobileCollectionButton(
   collectionId: CollectionId,
   label: string,
-  iconText: string,
+  iconName: string,
 ): HTMLButtonElement {
   const button = document.createElement('button');
   const icon = document.createElement('span');
@@ -1148,7 +1265,7 @@ function createMobileCollectionButton(
   button.setAttribute('aria-label', label);
   button.setAttribute('aria-current', 'false');
   icon.setAttribute('aria-hidden', 'true');
-  icon.textContent = iconText;
+  icon.innerHTML = renderIcon(iconName);
   button.append(icon);
 
   return button;

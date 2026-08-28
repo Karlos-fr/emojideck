@@ -72,6 +72,23 @@ describe('EmojiDeck MVP app', () => {
     );
     expect(document.querySelector('[data-language-select]')?.textContent).toContain('FR');
     expect(document.querySelector('[data-composer-toggle]')).toBeNull();
+    expect(document.querySelector('[data-category-id="all"]')).toBeTruthy();
+    expect(document.querySelector('[data-lucide="layout-grid"]')).toBeTruthy();
+  });
+
+  it('expands the app with equal viewport margins and persists the preference', () => {
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+    const toggle = document.querySelector<HTMLButtonElement>('.layout-toggle')!;
+
+    toggle.click();
+
+    expect(document.querySelector('.app-shell')?.classList.contains('is-expanded')).toBe(true);
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    expect(localStorage.getItem('emojideck.expanded')).toBe('true');
+
+    document.body.innerHTML = '<div id="app"></div>';
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+    expect(document.querySelector('.app-shell')?.classList.contains('is-expanded')).toBe(true);
   });
 
   it('enables language selection while keeping future controls unavailable', () => {
@@ -111,6 +128,7 @@ describe('EmojiDeck MVP app', () => {
 
     document.querySelector<HTMLButtonElement>('[data-category-id="people"]')?.click();
     expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Personen');
+    document.querySelector<HTMLButtonElement>('[data-category-id="all"]')?.click();
     typeSearch('lachen');
     expect(document.querySelectorAll('[data-emoji-button]').length).toBeGreaterThan(0);
   });
@@ -284,6 +302,7 @@ describe('EmojiDeck MVP app', () => {
   it('preserves favorite order across search, reload and the favorites grid', () => {
     createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
     favoriteToggle('face-with-tears-of-joy').click();
+    document.querySelector<HTMLButtonElement>('[data-category-id="all"]')?.click();
     typeSearch('feu');
     favoriteToggle('fire').click();
 
@@ -638,10 +657,10 @@ describe('EmojiDeck MVP app', () => {
   it('keeps navigation focus at desktop and mobile boundaries', () => {
     createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
     const desktopFirst = document.querySelector<HTMLButtonElement>(
-      '.desktop-sidebar [data-category-id="faces"]',
+      '.desktop-sidebar [data-category-id="all"]',
     )!;
     const mobileFirst = document.querySelector<HTMLButtonElement>(
-      '.mobile-category-bar [data-category-id="faces"]',
+      '.mobile-category-bar [data-category-id="all"]',
     )!;
     const desktopEvent = new KeyboardEvent('keydown', {
       key: 'ArrowUp',
@@ -703,6 +722,7 @@ describe('EmojiDeck MVP app', () => {
     createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
 
     await copyEmoji('face-with-tears-of-joy');
+    document.querySelector<HTMLButtonElement>('[data-category-id="all"]')?.click();
     typeSearch('feu');
     await copyEmoji('fire');
     typeSearch('rire');
@@ -723,6 +743,7 @@ describe('EmojiDeck MVP app', () => {
   it('keeps focus on an emoji when copying reorders recents', async () => {
     createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
     await copyEmoji('face-with-tears-of-joy');
+    document.querySelector<HTMLButtonElement>('[data-category-id="all"]')?.click();
     typeSearch('feu');
     await copyEmoji('fire');
     document
@@ -825,6 +846,7 @@ describe('EmojiDeck MVP app', () => {
   it('shows search results in a single grid while a query is active', () => {
     createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
 
+    document.querySelector<HTMLButtonElement>('[data-category-id="all"]')?.click();
     typeSearch('coeur');
 
     const resultCount = document.querySelectorAll('[data-emoji-button]').length;
@@ -855,6 +877,25 @@ describe('EmojiDeck MVP app', () => {
     expect(meta?.textContent).toBe(`${resultCount} résultats pour "rire"`);
     expect(resultCount).toBeGreaterThan(2);
     expect(document.activeElement).toBe(search);
+  });
+
+  it('applies category changes to the current search', () => {
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+    document.querySelector<HTMLButtonElement>('[data-category-id="all"]')?.click();
+    typeSearch('feu');
+
+    expect(document.querySelector('[data-emoji-id="fire"]')).toBeTruthy();
+
+    document.querySelector<HTMLButtonElement>('[data-category-id="food"]')?.click();
+    expect(document.querySelector('[data-emoji-id="fire"]')).toBeNull();
+    expect(
+      Array.from(document.querySelectorAll<HTMLButtonElement>('[data-emoji-button]')).every(
+        (button) => button.dataset.category === 'food',
+      ),
+    ).toBe(true);
+
+    document.querySelector<HTMLButtonElement>('[data-category-id="all"]')?.click();
+    expect(document.querySelector('[data-emoji-id="fire"]')).toBeTruthy();
   });
 
   it('keeps the same search field, focus and cursor position while typing', () => {
@@ -958,6 +999,7 @@ describe('EmojiDeck MVP app', () => {
   it('keeps copy behavior available from search results', async () => {
     createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
 
+    document.querySelector<HTMLButtonElement>('[data-category-id="all"]')?.click();
     typeSearch('feu');
     document.querySelector<HTMLButtonElement>('[data-emoji-id="fire"]')?.click();
 

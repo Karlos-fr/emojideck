@@ -1,6 +1,7 @@
 import type { LocaleCode } from '../i18n/language';
 
 export type EmojiCategoryId =
+  | 'all'
   | 'faces'
   | 'people'
   | 'animals'
@@ -55,15 +56,16 @@ export interface EmojiCatalog {
 }
 
 export const emojiCategories: EmojiCategory[] = [
-  { id: 'faces', icon: '☺' },
-  { id: 'people', icon: '♙' },
-  { id: 'animals', icon: '♧' },
-  { id: 'food', icon: '♢' },
-  { id: 'activities', icon: '◉' },
-  { id: 'travel', icon: '✈' },
-  { id: 'objects', icon: '▣' },
-  { id: 'symbols', icon: '✧' },
-  { id: 'flags', icon: '⚑' },
+  { id: 'all', icon: 'layout-grid' },
+  { id: 'faces', icon: 'smile' },
+  { id: 'people', icon: 'users' },
+  { id: 'animals', icon: 'paw-print' },
+  { id: 'food', icon: 'utensils' },
+  { id: 'activities', icon: 'trophy' },
+  { id: 'travel', icon: 'plane' },
+  { id: 'objects', icon: 'lightbulb' },
+  { id: 'symbols', icon: 'shapes' },
+  { id: 'flags', icon: 'flag' },
 ];
 
 const dataLoaders: Record<LocaleCode, () => Promise<GeneratedEmojiData>> = {
@@ -130,7 +132,9 @@ export function createEmojiCatalog(
   const byCategory = new Map(
     emojiCategories.map((category) => [
       category.id,
-      emojis.filter((entry) => entry.category === category.id),
+      category.id === 'all'
+        ? emojis
+        : emojis.filter((entry) => entry.category === category.id),
     ]),
   );
 

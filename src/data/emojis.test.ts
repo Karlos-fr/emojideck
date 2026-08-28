@@ -18,6 +18,7 @@ const { emojis } = catalog;
 describe('generated emoji data', () => {
   it('defines the complete Unicode category set used by the picker', () => {
     expect(emojiCategories.map((category) => category.id)).toEqual([
+      'all',
       'faces',
       'people',
       'animals',
@@ -88,11 +89,13 @@ describe('generated emoji data', () => {
   });
 
   it('can filter emojis by category', () => {
+    const all = catalog.getByCategory('all');
     const faces = catalog.getByCategory('faces');
     const people = catalog.getByCategory('people');
     const activities = catalog.getByCategory('activities');
     const travel = catalog.getByCategory('travel');
 
+    expect(all).toBe(catalog.emojis);
     expect(faces.length).toBeGreaterThan(8);
     expect(faces.every((entry) => entry.category === 'faces')).toBe(true);
     expect(people.length).toBeGreaterThan(100);

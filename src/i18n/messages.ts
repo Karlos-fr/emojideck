@@ -38,15 +38,26 @@ export interface Messages {
   loading: string;
   loadFailed: string;
   retry: string;
+  expandApp: string;
+  collapseApp: string;
 }
 
 const categoryLabels: Record<LocaleCode, Record<EmojiCategoryId, string>> = {
-  fr: { faces: 'Smileys', people: 'Personnes', animals: 'Animaux', food: 'Nourriture', activities: 'Activités', travel: 'Voyages', objects: 'Objets', symbols: 'Symboles', flags: 'Drapeaux' },
-  en: { faces: 'Smileys', people: 'People', animals: 'Animals', food: 'Food', activities: 'Activities', travel: 'Travel', objects: 'Objects', symbols: 'Symbols', flags: 'Flags' },
-  de: { faces: 'Smileys', people: 'Personen', animals: 'Tiere', food: 'Essen', activities: 'Aktivitäten', travel: 'Reisen', objects: 'Objekte', symbols: 'Symbole', flags: 'Flaggen' },
-  it: { faces: 'Faccine', people: 'Persone', animals: 'Animali', food: 'Cibo', activities: 'Attività', travel: 'Viaggi', objects: 'Oggetti', symbols: 'Simboli', flags: 'Bandiere' },
-  es: { faces: 'Emoticonos', people: 'Personas', animals: 'Animales', food: 'Comida', activities: 'Actividades', travel: 'Viajes', objects: 'Objetos', symbols: 'Símbolos', flags: 'Banderas' },
-  pt: { faces: 'Smileys', people: 'Pessoas', animals: 'Animais', food: 'Comida', activities: 'Atividades', travel: 'Viagens', objects: 'Objetos', symbols: 'Símbolos', flags: 'Bandeiras' },
+  fr: { all: 'Tous', faces: 'Smileys', people: 'Personnes', animals: 'Animaux', food: 'Nourriture', activities: 'Activités', travel: 'Voyages', objects: 'Objets', symbols: 'Symboles', flags: 'Drapeaux' },
+  en: { all: 'All', faces: 'Smileys', people: 'People', animals: 'Animals', food: 'Food', activities: 'Activities', travel: 'Travel', objects: 'Objects', symbols: 'Symbols', flags: 'Flags' },
+  de: { all: 'Alle', faces: 'Smileys', people: 'Personen', animals: 'Tiere', food: 'Essen', activities: 'Aktivitäten', travel: 'Reisen', objects: 'Objekte', symbols: 'Symbole', flags: 'Flaggen' },
+  it: { all: 'Tutti', faces: 'Faccine', people: 'Persone', animals: 'Animali', food: 'Cibo', activities: 'Attività', travel: 'Viaggi', objects: 'Oggetti', symbols: 'Simboli', flags: 'Bandiere' },
+  es: { all: 'Todos', faces: 'Emoticonos', people: 'Personas', animals: 'Animales', food: 'Comida', activities: 'Actividades', travel: 'Viajes', objects: 'Objetos', symbols: 'Símbolos', flags: 'Banderas' },
+  pt: { all: 'Todos', faces: 'Smileys', people: 'Pessoas', animals: 'Animais', food: 'Comida', activities: 'Atividades', travel: 'Viagens', objects: 'Objetos', symbols: 'Símbolos', flags: 'Bandeiras' },
+};
+
+const layoutMessages: Record<LocaleCode, Pick<Messages, 'expandApp' | 'collapseApp'>> = {
+  fr: { expandApp: "Agrandir l’application", collapseApp: "Réduire l’application" },
+  en: { expandApp: 'Expand application', collapseApp: 'Restore application' },
+  de: { expandApp: 'Anwendung vergrößern', collapseApp: 'Anwendung verkleinern' },
+  it: { expandApp: "Espandi l’applicazione", collapseApp: "Riduci l’applicazione" },
+  es: { expandApp: 'Ampliar la aplicación', collapseApp: 'Reducir la aplicación' },
+  pt: { expandApp: 'Expandir a aplicação', collapseApp: 'Reduzir a aplicação' },
 };
 
 const skinToneMessages: Record<
@@ -97,7 +108,7 @@ export const messages: Record<LocaleCode, Messages> = {
   }),
 };
 
-interface MessageParts extends Omit<Messages, 'categories' | 'skinTone' | 'chooseSkinTone' | 'skinToneNames' | 'variantsFor' | 'copyVariant' | 'loading' | 'loadFailed' | 'retry' | 'searchResults' | 'resultsLabel' | 'noResults' | 'copy' | 'addFavorite' | 'removeFavorite'> {
+interface MessageParts extends Omit<Messages, 'categories' | 'skinTone' | 'chooseSkinTone' | 'skinToneNames' | 'variantsFor' | 'copyVariant' | 'loading' | 'loadFailed' | 'retry' | 'expandApp' | 'collapseApp' | 'searchResults' | 'resultsLabel' | 'noResults' | 'copy' | 'addFavorite' | 'removeFavorite'> {
   result: string;
   results: string;
   forWord: string;
@@ -114,6 +125,7 @@ function createMessages(locale: LocaleCode, parts: MessageParts): Messages {
   return {
     ...parts,
     ...statusMessages[locale],
+    ...layoutMessages[locale],
     categories: categoryLabels[locale],
     skinTone: skinTone.label,
     chooseSkinTone: skinTone.choose,
