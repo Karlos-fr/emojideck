@@ -8,6 +8,10 @@
   <a href="docs/README.en.md"><img src="docs/assets/flag-gb.svg" alt="" width="18" height="12" /> English</a>
 </p>
 
+<p align="center">
+  <a href="https://karlos-fr.github.io/emojideck/"><strong>Ouvrir EmojiDeck</strong></a>
+</p>
+
 # EmojiDeck
 
 Sélecteur d’emojis rapide, léger et multilingue pour trouver puis copier un emoji en quelques secondes.
@@ -149,4 +153,3 @@ Les tests couvrent le catalogue, la recherche, les préférences locales, l’ac
 - Rendu progressif et confinement des éléments hors écran.
 - Icônes d’interface Lucide.
 - Tests Vitest, JSDOM et Playwright.
-
