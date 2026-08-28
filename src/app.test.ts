@@ -1,7 +1,38 @@
 /* @vitest-environment jsdom */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createEmojiDeckApp } from './app';
+import { createEmojiDeckApp as mountEmojiDeckApp, initializeEmojiDeckApp } from './app';
+import { createEmojiCatalog, type EmojiCatalog, type GeneratedEmojiData } from './data/emojis';
+import germanData from './data/generated/emojis.de.json';
+import englishData from './data/generated/emojis.en.json';
+import spanishData from './data/generated/emojis.es.json';
+import frenchData from './data/generated/emojis.fr.json';
+import italianData from './data/generated/emojis.it.json';
+import portugueseData from './data/generated/emojis.pt.json';
+import type { LocaleCode } from './i18n/language';
+
+const localizedData: Record<LocaleCode, GeneratedEmojiData> = {
+  fr: frenchData as GeneratedEmojiData,
+  en: englishData as GeneratedEmojiData,
+  de: germanData as GeneratedEmojiData,
+  it: italianData as GeneratedEmojiData,
+  es: spanishData as GeneratedEmojiData,
+  pt: portugueseData as GeneratedEmojiData,
+};
+const catalogs = Object.fromEntries(
+  Object.entries(localizedData).map(([locale, data]) => [
+    locale,
+    createEmojiCatalog(locale as LocaleCode, data, localizedData.en),
+  ]),
+) as Record<LocaleCode, EmojiCatalog>;
+
+function createEmojiDeckApp(root: HTMLElement): void {
+  mountEmojiDeckApp(root, {
+    locale: 'fr',
+    catalog: catalogs.fr,
+    loadCatalog: async (locale) => catalogs[locale],
+  });
+}
 
 describe('EmojiDeck MVP app', () => {
   beforeEach(() => {
@@ -43,11 +74,103 @@ describe('EmojiDeck MVP app', () => {
     expect(document.querySelector('[data-composer-toggle]')).toBeNull();
   });
 
-  it('keeps only controls from future phases unavailable', () => {
+  it('enables language selection while keeping future controls unavailable', () => {
     createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
 
-    expect(document.querySelector<HTMLButtonElement>('[data-language-select]')?.disabled).toBe(true);
+    expect(languageSelect('desktop').disabled).toBe(false);
+    expect(Array.from(languageSelect('desktop').options, (option) => option.value)).toEqual([
+      'fr',
+      'en',
+      'de',
+      'it',
+      'es',
+      'pt',
+    ]);
     expect(document.querySelector<HTMLButtonElement>('.mobile-menu-button')?.disabled).toBe(false);
+  });
+
+  it('switches interface and search language without clearing local preferences', async () => {
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+    changeTheme('desktop', 'dark');
+    favoriteToggle('face-with-tears-of-joy').click();
+    await copyEmoji('face-with-tears-of-joy');
+
+    await changeLanguage('de');
+
+    expect(document.documentElement.lang).toBe('de');
+    expect(languageSelect('desktop').value).toBe('de');
+    expect(languageSelect('mobile').value).toBe('de');
+    expect(localStorage.getItem('emojideck.language')).toBe('de');
+    expect(localStorage.getItem('emojideck.theme')).toBe('dark');
+    expect(JSON.parse(localStorage.getItem('emojideck.recents') ?? '[]')).toContain(
+      'face-with-tears-of-joy',
+    );
+    expect(JSON.parse(localStorage.getItem('emojideck.favorites') ?? '[]')).toContain(
+      'face-with-tears-of-joy',
+    );
+
+    document.querySelector<HTMLButtonElement>('[data-category-id="people"]')?.click();
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Personen');
+    typeSearch('lachen');
+    expect(document.querySelectorAll('[data-emoji-button]').length).toBeGreaterThan(0);
+  });
+
+  it('initializes from the stored language before browser detection', async () => {
+    localStorage.setItem('emojideck.language', 'es');
+
+    await initializeEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+
+    expect(document.documentElement.lang).toBe('es');
+    expect(languageSelect('desktop').value).toBe('es');
+    expect(document.querySelector<HTMLInputElement>('[type="search"]')?.placeholder).toBe(
+      'Buscar un emoji',
+    );
+  });
+
+  it('shows a localized loading state until the active catalog is ready', async () => {
+    localStorage.setItem('emojideck.language', 'fr');
+    let finishLoading: ((catalog: EmojiCatalog) => void) | undefined;
+    const initialization = initializeEmojiDeckApp(
+      document.querySelector<HTMLDivElement>('#app')!,
+      {
+        loadCatalog: () =>
+          new Promise<EmojiCatalog>((resolve) => {
+            finishLoading = resolve;
+          }),
+      },
+    );
+
+    expect(document.querySelector('.app-status-shell')?.textContent).toContain(
+      'Chargement des emojis',
+    );
+    expect(document.querySelector('.app-status-shell')?.getAttribute('aria-busy')).toBe('true');
+
+    finishLoading?.(catalogs.fr);
+    await initialization;
+
+    expect(document.querySelector('.app-status-shell')).toBeNull();
+    expect(document.querySelector('.app-shell')).toBeTruthy();
+  });
+
+  it('offers a retry after a catalog loading failure', async () => {
+    localStorage.setItem('emojideck.language', 'en');
+    const loader = vi
+      .fn<(locale: LocaleCode) => Promise<EmojiCatalog>>()
+      .mockRejectedValueOnce(new Error('network unavailable'))
+      .mockResolvedValue(catalogs.en);
+
+    await initializeEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!, {
+      loadCatalog: loader,
+    });
+
+    expect(document.querySelector('.app-status-shell')?.getAttribute('aria-busy')).toBe('false');
+    expect(document.querySelector('.app-status-shell')?.textContent).toContain(
+      'Unable to load emojis.',
+    );
+    document.querySelector<HTMLButtonElement>('.status-retry-button')?.click();
+
+    await vi.waitFor(() => expect(document.querySelector('.app-shell')).toBeTruthy());
+    expect(loader).toHaveBeenCalledTimes(2);
   });
 
   it('applies the system theme by default and renders synchronized controls', () => {
@@ -231,7 +354,7 @@ describe('EmojiDeck MVP app', () => {
     const heading = document.querySelector('[data-section-heading]');
     const visibleButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-emoji-button]'));
 
-    expect(heading?.textContent).toBe('Visages');
+    expect(heading?.textContent).toBe('Smileys');
     expect(visibleButtons.length).toBeGreaterThan(8);
     expect(visibleButtons.every((button) => button.dataset.category === 'faces')).toBe(true);
   });
@@ -251,7 +374,7 @@ describe('EmojiDeck MVP app', () => {
     const grid = document.querySelector<HTMLElement>('.emoji-grid');
 
     expect(grid?.getAttribute('role')).toBe('group');
-    expect(grid?.getAttribute('aria-label')).toBe('Visages');
+    expect(grid?.getAttribute('aria-label')).toBe('Smileys');
   });
 
   it('moves focus to the next emoji with ArrowRight', () => {
@@ -379,8 +502,8 @@ describe('EmojiDeck MVP app', () => {
     const faces = document.querySelector<HTMLButtonElement>(
       '.desktop-sidebar [data-category-id="faces"]',
     )!;
-    const animals = document.querySelector<HTMLButtonElement>(
-      '.desktop-sidebar [data-category-id="animals"]',
+    const people = document.querySelector<HTMLButtonElement>(
+      '.desktop-sidebar [data-category-id="people"]',
     )!;
     faces.focus();
 
@@ -388,8 +511,8 @@ describe('EmojiDeck MVP app', () => {
       new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
     );
 
-    expect(document.activeElement).toBe(animals);
-    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Animaux');
+    expect(document.activeElement).toBe(people);
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Personnes');
   });
 
   it('opens the previous desktop category with ArrowUp', () => {
@@ -397,18 +520,18 @@ describe('EmojiDeck MVP app', () => {
     const faces = document.querySelector<HTMLButtonElement>(
       '.desktop-sidebar [data-category-id="faces"]',
     )!;
-    const animals = document.querySelector<HTMLButtonElement>(
-      '.desktop-sidebar [data-category-id="animals"]',
+    const people = document.querySelector<HTMLButtonElement>(
+      '.desktop-sidebar [data-category-id="people"]',
     )!;
-    animals.click();
-    animals.focus();
+    people.click();
+    people.focus();
 
-    animals.dispatchEvent(
+    people.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, cancelable: true }),
     );
 
     expect(document.activeElement).toBe(faces);
-    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Visages');
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Smileys');
   });
 
   it('continues desktop navigation into available collections', async () => {
@@ -428,7 +551,7 @@ describe('EmojiDeck MVP app', () => {
     );
 
     expect(document.activeElement).toBe(recents);
-    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Recents');
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Récents');
   });
 
   it('returns from a desktop collection to the previous category', async () => {
@@ -456,8 +579,8 @@ describe('EmojiDeck MVP app', () => {
     const faces = document.querySelector<HTMLButtonElement>(
       '.mobile-category-bar [data-category-id="faces"]',
     )!;
-    const animals = document.querySelector<HTMLButtonElement>(
-      '.mobile-category-bar [data-category-id="animals"]',
+    const people = document.querySelector<HTMLButtonElement>(
+      '.mobile-category-bar [data-category-id="people"]',
     )!;
     faces.focus();
 
@@ -465,8 +588,8 @@ describe('EmojiDeck MVP app', () => {
       new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
     );
 
-    expect(document.activeElement).toBe(animals);
-    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Animaux');
+    expect(document.activeElement).toBe(people);
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Personnes');
   });
 
   it('opens the previous mobile category with ArrowLeft', () => {
@@ -474,18 +597,18 @@ describe('EmojiDeck MVP app', () => {
     const faces = document.querySelector<HTMLButtonElement>(
       '.mobile-category-bar [data-category-id="faces"]',
     )!;
-    const animals = document.querySelector<HTMLButtonElement>(
-      '.mobile-category-bar [data-category-id="animals"]',
+    const people = document.querySelector<HTMLButtonElement>(
+      '.mobile-category-bar [data-category-id="people"]',
     )!;
-    animals.click();
-    animals.focus();
+    people.click();
+    people.focus();
 
-    animals.dispatchEvent(
+    people.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
     );
 
     expect(document.activeElement).toBe(faces);
-    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Visages');
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Smileys');
   });
 
   it('continues mobile navigation into and out of available collections', async () => {
@@ -503,7 +626,7 @@ describe('EmojiDeck MVP app', () => {
       new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
     );
     expect(document.activeElement).toBe(recents);
-    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Recents');
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Récents');
 
     recents.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
@@ -589,7 +712,7 @@ describe('EmojiDeck MVP app', () => {
       .querySelector<HTMLButtonElement>('.desktop-sidebar [data-collection-id="recents"]')
       ?.click();
 
-    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Recents');
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Récents');
     expect(visibleEmojiIds()).toEqual(['face-with-tears-of-joy', 'fire']);
 
     await copyEmoji('fire');
@@ -652,7 +775,7 @@ describe('EmojiDeck MVP app', () => {
       .querySelector<HTMLButtonElement>('.desktop-sidebar [data-collection-id="recents"]')
       ?.click();
 
-    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Recents');
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Récents');
     expect(visibleEmojiIds()).toEqual(['fire', 'red-heart']);
   });
 
@@ -667,7 +790,7 @@ describe('EmojiDeck MVP app', () => {
 
     try {
       expect(() => createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!)).not.toThrow();
-      expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Visages');
+      expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Smileys');
     } finally {
       if (localStorageDescriptor) {
         Object.defineProperty(window, 'localStorage', localStorageDescriptor);
@@ -684,7 +807,7 @@ describe('EmojiDeck MVP app', () => {
       .querySelector<HTMLButtonElement>('.mobile-category-bar [data-collection-id="recents"]')
       ?.click();
 
-    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Recents');
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Récents');
     expect(document.querySelector<HTMLInputElement>('input[type="search"]')?.value).toBe('');
     expect(visibleEmojiIds()).toEqual(['face-with-tears-of-joy']);
   });
@@ -707,7 +830,7 @@ describe('EmojiDeck MVP app', () => {
     const resultCount = document.querySelectorAll('[data-emoji-button]').length;
     expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Recherche');
     expect(document.querySelector('[data-search-summary]')?.textContent).toBe(
-      `${resultCount} resultats pour "coeur"`,
+      `${resultCount} résultats pour "coeur"`,
     );
     expect(resultCount).toBeGreaterThan(2);
     expect(document.querySelector<HTMLButtonElement>('[data-emoji-id="red-heart"]')).toBeTruthy();
@@ -729,7 +852,7 @@ describe('EmojiDeck MVP app', () => {
     const resultCount = document.querySelectorAll('[data-emoji-button]').length;
     expect(meta?.getAttribute('aria-live')).toBe('polite');
     expect(meta?.getAttribute('aria-atomic')).toBe('true');
-    expect(meta?.textContent).toBe(`${resultCount} resultats pour "rire"`);
+    expect(meta?.textContent).toBe(`${resultCount} résultats pour "rire"`);
     expect(resultCount).toBeGreaterThan(2);
     expect(document.activeElement).toBe(search);
   });
@@ -819,7 +942,7 @@ describe('EmojiDeck MVP app', () => {
 
     expect(search.value).toBe('');
     expect(document.activeElement).toBe(search);
-    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Visages');
+    expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Smileys');
   });
 
   it('renders the search query as text instead of interpreting HTML', () => {
@@ -842,13 +965,139 @@ describe('EmojiDeck MVP app', () => {
     expect(await findToast()).toBe('Copié !');
   });
 
+  it('persists and applies the default skin tone to compatible emojis', () => {
+    localStorage.setItem('emojideck.skinTone', 'medium');
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+    document.querySelector<HTMLButtonElement>('[data-category-id="people"]')?.click();
+
+    const wavingHand = document.querySelector<HTMLButtonElement>(
+      '[data-emoji-button][data-emoji-id="waving-hand"]',
+    );
+    expect(skinToneSelect('desktop').value).toBe('medium');
+    expect(skinToneSelect('mobile').value).toBe('medium');
+    expect(wavingHand?.dataset.emoji).toBe('👋🏽');
+    expect(wavingHand?.textContent).toBe('👋🏽');
+
+    skinToneSelect('desktop').value = 'dark';
+    skinToneSelect('desktop').dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(localStorage.getItem('emojideck.skinTone')).toBe('dark');
+    expect(skinToneSelect('mobile').value).toBe('dark');
+    expect(
+      document.querySelector<HTMLButtonElement>(
+        '[data-emoji-button][data-emoji-id="waving-hand"]',
+      )?.dataset.emoji,
+    ).toBe('👋🏿');
+  });
+
+  it('does not alter emojis that do not support skin tones', () => {
+    localStorage.setItem('emojideck.skinTone', 'dark');
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+
+    const emoji = document.querySelector<HTMLButtonElement>(
+      '[data-emoji-button][data-emoji-id="face-with-tears-of-joy"]',
+    );
+    expect(emoji?.dataset.emoji).toBe('😂');
+    expect(
+      emoji?.closest('.emoji-cell')?.querySelector('[data-variant-toggle]'),
+    ).toBeNull();
+  });
+
+  it('opens an accessible skin tone menu and restores focus with Escape', () => {
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+    document.querySelector<HTMLButtonElement>('[data-category-id="people"]')?.click();
+    const toggle = document.querySelector<HTMLButtonElement>(
+      '[data-variant-toggle][data-emoji-id="waving-hand"]',
+    )!;
+
+    toggle.click();
+
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+    const options = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('[data-variant-option]'),
+    );
+    expect(dialog?.getAttribute('aria-labelledby')).toBeTruthy();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(options).toHaveLength(6);
+    expect(document.activeElement).toBe(options[0]);
+
+    options[0].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+    );
+    expect(document.activeElement).toBe(options[1]);
+
+    options[1].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    );
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('copies a chosen variant directly and records its parent in recents', async () => {
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+    document.querySelector<HTMLButtonElement>('[data-category-id="people"]')?.click();
+    document
+      .querySelector<HTMLButtonElement>('[data-variant-toggle][data-emoji-id="waving-hand"]')
+      ?.click();
+    const variants = document.querySelectorAll<HTMLButtonElement>('[data-variant-option]');
+
+    variants.item(5).click();
+    await Promise.resolve();
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('👋🏿');
+    expect(JSON.parse(localStorage.getItem('emojideck.recents') ?? '[]')).toContain(
+      'waving-hand',
+    );
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it('keeps mixed skin tone variants inside the parent emoji menu', () => {
+    createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+    document.querySelector<HTMLButtonElement>('[data-category-id="people"]')?.click();
+    const handshake = document.querySelector<HTMLButtonElement>(
+      '[data-emoji-button][data-emoji-id="handshake"]',
+    )!;
+
+    handshake.dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 }),
+    );
+
+    expect(document.querySelectorAll('[data-variant-option]')).toHaveLength(26);
+    expect(visibleEmojiIds().filter((id) => id === 'handshake')).toHaveLength(1);
+    expect(
+      Array.from(document.querySelectorAll<HTMLButtonElement>('[data-variant-option]')).some(
+        (option) => option.dataset.emoji === '🫱🏻‍🫲🏼',
+      ),
+    ).toBe(true);
+  });
+
+  it('opens the variant menu after a long press without copying the base emoji', () => {
+    vi.useFakeTimers();
+    try {
+      createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
+      document.querySelector<HTMLButtonElement>('[data-category-id="people"]')?.click();
+      const wavingHand = document.querySelector<HTMLButtonElement>(
+        '[data-emoji-button][data-emoji-id="waving-hand"]',
+      )!;
+
+      wavingHand.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0 }));
+      vi.advanceTimersByTime(500);
+
+      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('shows a sober empty state when no emoji matches the query', () => {
     createEmojiDeckApp(document.querySelector<HTMLDivElement>('#app')!);
 
     typeSearch('zzzz');
 
     expect(document.querySelector('[data-section-heading]')?.textContent).toBe('Recherche');
-    expect(document.querySelector('[data-empty-state]')?.textContent).toBe('Aucun emoji trouve pour "zzzz"');
+    expect(document.querySelector('[data-empty-state]')?.textContent).toBe('Aucun emoji trouvé pour "zzzz"');
     expect(document.querySelectorAll('[data-emoji-button]').length).toBe(0);
   });
 });
@@ -912,6 +1161,35 @@ function themeSelect(location: 'desktop' | 'mobile'): HTMLSelectElement {
   }
 
   return select;
+}
+
+function languageSelect(location: 'desktop' | 'mobile'): HTMLSelectElement {
+  const select = document.querySelector<HTMLSelectElement>(`[data-language-select="${location}"]`);
+
+  if (!select) {
+    throw new Error(`Language select not found: ${location}`);
+  }
+
+  return select;
+}
+
+function skinToneSelect(location: 'desktop' | 'mobile'): HTMLSelectElement {
+  const select = document.querySelector<HTMLSelectElement>(
+    `[data-skin-tone-select="${location}"]`,
+  );
+
+  if (!select) {
+    throw new Error(`Skin tone select not found: ${location}`);
+  }
+
+  return select;
+}
+
+async function changeLanguage(locale: LocaleCode): Promise<void> {
+  const select = languageSelect('desktop');
+  select.value = locale;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+  await vi.waitFor(() => expect(document.documentElement.lang).toBe(locale));
 }
 
 function changeTheme(location: 'desktop' | 'mobile', mode: 'system' | 'light' | 'dark'): void {

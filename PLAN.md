@@ -145,30 +145,30 @@ Objectif : remplacer le jeu de donnees initial par des donnees maintenables et l
 
 Objectif : proposer une interface et une recherche localisees sans telecharger toutes les langues inutilement.
 
-- [ ] Definir les langues ciblees du lancement complet : francais, anglais, allemand, italien, espagnol, portugais.
-- [ ] Localiser les textes de l'interface.
-- [ ] Detecter la langue avec `navigator.languages`.
-- [ ] Ajouter un selecteur manuel de langue.
-- [ ] Enregistrer la langue choisie dans `localStorage`.
-- [ ] Donner la priorite a la langue choisie sur la detection navigateur.
-- [ ] Charger les donnees emoji de la langue active a la demande.
-- [ ] Prevoir un fallback anglais si une langue ou une traduction manque.
-- [ ] Verifier la recherche dans chaque langue cible.
-- [ ] Verifier que le changement de langue ne supprime pas recents, favoris ou theme.
+- [x] Definir les langues ciblees du lancement complet : francais, anglais, allemand, italien, espagnol, portugais.
+- [x] Localiser les textes de l'interface.
+- [x] Detecter la langue avec `navigator.languages`.
+- [x] Ajouter un selecteur manuel de langue.
+- [x] Enregistrer la langue choisie dans `localStorage`.
+- [x] Donner la priorite a la langue choisie sur la detection navigateur.
+- [x] Charger les donnees emoji de la langue active a la demande.
+- [x] Prevoir un fallback anglais si une langue ou une traduction manque.
+- [x] Verifier la recherche dans chaque langue cible.
+- [x] Verifier que le changement de langue ne supprime pas recents, favoris ou theme.
 
 ## Phase 10 - Teintes de peau
 
 Objectif : exploiter les variantes Unicode / CLDR sans creer de grandes listes redondantes.
 
-- [ ] Identifier les emojis qui acceptent des variantes de peau dans les donnees generees.
-- [ ] Stocker les variantes disponibles dans le format de donnees interne.
-- [ ] Ajouter un menu de variantes sur appui long, clic secondaire ou bouton discret.
-- [ ] Rendre le menu de variantes utilisable au clavier et avec un lecteur d'ecran.
-- [ ] Copier directement la variante choisie.
-- [ ] Ajouter un choix de teinte de peau par defaut.
-- [ ] Enregistrer la teinte par defaut dans `localStorage`.
-- [ ] Appliquer la teinte par defaut aux emojis compatibles dans la grille.
-- [ ] Verifier que les variantes mixtes ne deviennent pas des categories dediees.
+- [x] Identifier les emojis qui acceptent des variantes de peau dans les donnees generees.
+- [x] Stocker les variantes disponibles dans le format de donnees interne.
+- [x] Ajouter un menu de variantes sur appui long, clic secondaire ou bouton discret.
+- [x] Rendre le menu de variantes utilisable au clavier et avec un lecteur d'ecran.
+- [x] Copier directement la variante choisie.
+- [x] Ajouter un choix de teinte de peau par defaut.
+- [x] Enregistrer la teinte par defaut dans `localStorage`.
+- [x] Appliquer la teinte par defaut aux emojis compatibles dans la grille.
+- [x] Verifier que les variantes mixtes ne deviennent pas des categories dediees.
 
 ## Phase 11 - PWA et offline
 
@@ -202,15 +202,15 @@ Objectif : ajouter un mode optionnel pour composer plusieurs emojis avant copie.
 
 Objectif : rendre l'application fluide, legere et agreable avant publication.
 
-- [ ] Mesurer le poids du JavaScript applicatif hors donnees.
-- [ ] Optimiser le chargement initial.
-- [ ] Verifier que seules les donnees necessaires sont chargees.
-- [ ] Ajouter une virtualisation si la grille complete devient trop lourde.
-- [ ] Stabiliser les dimensions des boutons emoji pour eviter les sauts de layout.
-- [ ] Polir les etats vides, chargements, erreurs et feedbacks.
-- [ ] Tester sur plusieurs tailles d'ecran.
-- [ ] Tester sur plusieurs navigateurs modernes.
-- [ ] Verifier qu'aucun tracking, cookie ou appel backend inutile n'est present.
+- [x] Mesurer le poids du JavaScript applicatif hors donnees.
+- [x] Optimiser le chargement initial.
+- [x] Verifier que seules les donnees necessaires sont chargees.
+- [x] Ajouter une virtualisation si la grille complete devient trop lourde.
+- [x] Stabiliser les dimensions des boutons emoji pour eviter les sauts de layout.
+- [x] Polir les etats vides, chargements, erreurs et feedbacks.
+- [x] Tester sur plusieurs tailles d'ecran.
+- [x] Tester sur plusieurs navigateurs modernes.
+- [x] Verifier qu'aucun tracking, cookie ou appel backend inutile n'est present.
 
 ## Phase 14 - Publication
 

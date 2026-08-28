@@ -1,18 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import {
+  createEmojiCatalog,
   emojiCategories,
-  getEmojiById,
-  getEmojisByCategory,
-  emojis,
+  type GeneratedEmojiData,
   type EmojiCategoryId,
 } from './emojis';
+import englishData from './generated/emojis.en.json';
+import frenchData from './generated/emojis.fr.json';
+
+const catalog = createEmojiCatalog(
+  'fr',
+  frenchData as GeneratedEmojiData,
+  englishData as GeneratedEmojiData,
+);
+const { emojis } = catalog;
 
 describe('generated emoji data', () => {
-  it('defines the compact category set used by the first UI', () => {
+  it('defines the complete Unicode category set used by the picker', () => {
     expect(emojiCategories.map((category) => category.id)).toEqual([
       'faces',
+      'people',
       'animals',
       'food',
+      'activities',
+      'travel',
       'objects',
       'symbols',
       'flags',
@@ -34,10 +45,10 @@ describe('generated emoji data', () => {
       expect(entry.id).toMatch(/^[a-z0-9-]+$/);
       expect(entry.emoji.length).toBeGreaterThan(0);
       expect(categoryIds.has(entry.category)).toBe(true);
-      expect(entry.name.fr.length).toBeGreaterThan(0);
-      expect(entry.name.en.length).toBeGreaterThan(0);
-      expect(entry.keywords.fr.length).toBeGreaterThan(0);
-      expect(entry.keywords.en.length).toBeGreaterThan(0);
+      expect(entry.name.length).toBeGreaterThan(0);
+      expect(entry.fallbackName.length).toBeGreaterThan(0);
+      expect(entry.keywords.length).toBeGreaterThan(0);
+      expect(entry.fallbackKeywords.length).toBeGreaterThan(0);
       expect(entry.codepoints.length).toBeGreaterThan(0);
       expect(entry.codepoints.every((codepoint) => /^U\+[0-9A-F]+$/.test(codepoint))).toBe(true);
       expect(entry.supportsSkinTone).toBe(Boolean(entry.skinToneVariants?.length));
@@ -45,8 +56,8 @@ describe('generated emoji data', () => {
   });
 
   it('attaches skin-tone variants to their base emoji instead of listing them separately', () => {
-    const thumbsUp = getEmojiById('thumbs-up');
-    const handshake = getEmojiById('handshake');
+    const thumbsUp = catalog.getById('thumbs-up');
+    const handshake = catalog.getById('handshake');
 
     expect(thumbsUp?.skinToneVariants).toEqual(
       expect.arrayContaining(['👍🏻', '👍🏼', '👍🏽', '👍🏾', '👍🏿']),
@@ -57,13 +68,35 @@ describe('generated emoji data', () => {
   });
 
   it('can retrieve one emoji by id', () => {
-    expect(getEmojiById('face-with-tears-of-joy')?.emoji).toBe('😂');
+    expect(catalog.getById('face-with-tears-of-joy')?.emoji).toBe('😂');
+  });
+
+  it('uses English when a localized annotation is missing', () => {
+    const englishEntry = (englishData as GeneratedEmojiData).emojis[0];
+    const incompleteData: GeneratedEmojiData = {
+      ...(frenchData as GeneratedEmojiData),
+      emojis: [{ ...englishEntry, name: '', keywords: [] }],
+    };
+    const fallbackCatalog = createEmojiCatalog(
+      'fr',
+      incompleteData,
+      englishData as GeneratedEmojiData,
+    );
+
+    expect(fallbackCatalog.emojis[0].name).toBe(englishEntry.name);
+    expect(fallbackCatalog.emojis[0].keywords).toEqual(englishEntry.keywords);
   });
 
   it('can filter emojis by category', () => {
-    const faces = getEmojisByCategory('faces');
+    const faces = catalog.getByCategory('faces');
+    const people = catalog.getByCategory('people');
+    const activities = catalog.getByCategory('activities');
+    const travel = catalog.getByCategory('travel');
 
     expect(faces.length).toBeGreaterThan(8);
     expect(faces.every((entry) => entry.category === 'faces')).toBe(true);
+    expect(people.length).toBeGreaterThan(100);
+    expect(activities.length).toBeGreaterThan(50);
+    expect(travel.length).toBeGreaterThan(100);
   });
 });

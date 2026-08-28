@@ -1,29 +1,31 @@
 import {
   emojiCategories,
-  getEmojiById,
-  getEmojisByCategory,
-  emojis,
+  loadEmojiCatalog,
   type EmojiCategory,
+  type EmojiCatalog,
   type EmojiCategoryId,
 } from './data/emojis';
 import { searchEmojis } from './data/search';
+import { resolveLocale, saveLocale, supportedLocales, type LocaleCode } from './i18n/language';
+import { messages, type Messages } from './i18n/messages';
 import { createFavoriteEmojiStore } from './storage/favoriteEmojis';
 import { createRecentEmojiStore } from './storage/recentEmojis';
+import {
+  createSkinToneStore,
+  skinTonePreferences,
+  type SkinTonePreference,
+} from './storage/skinTone';
 import {
   createThemeController,
   type ColorSchemePreference,
   type ThemeMode,
 } from './theme/theme';
-import { renderEmojiResults } from './ui/emojiResults';
-
-const categoryIcons: Record<EmojiCategoryId, string> = {
-  faces: '☺',
-  animals: '♧',
-  food: '♢',
-  objects: '▣',
-  symbols: '✧',
-  flags: '⚑',
-};
+import {
+  completeEmojiResults,
+  disposeEmojiResults,
+  renderEmojiResults,
+  revealMoreEmojiResults,
+} from './ui/emojiResults';
 
 const emojiNavigationKeys = new Set([
   'ArrowRight',
@@ -39,93 +41,184 @@ type CollectionId = 'recents' | 'favorites';
 type EmojiDeckView = EmojiCategoryId | CollectionId;
 
 interface EmojiDeckState {
+  locale: LocaleCode;
+  catalog: EmojiCatalog;
   activeView: EmojiDeckView;
   lastCategory: EmojiCategoryId;
   query: string;
   recentIds: string[];
   favoriteIds: string[];
+  skinTonePreference: SkinTonePreference;
   toastMessage: string | null;
 }
 
-export function createEmojiDeckApp(root: HTMLElement): void {
+export interface EmojiDeckAppOptions {
+  locale: LocaleCode;
+  catalog: EmojiCatalog;
+  loadCatalog?: (locale: LocaleCode) => Promise<EmojiCatalog>;
+}
+
+export interface EmojiDeckInitializationOptions {
+  loadCatalog?: (locale: LocaleCode) => Promise<EmojiCatalog>;
+}
+
+export async function initializeEmojiDeckApp(
+  root: HTMLElement,
+  options: EmojiDeckInitializationOptions = {},
+): Promise<void> {
+  const storage = getBrowserStorage();
+  const locale = resolveLocale(storage, navigator.languages);
+  const text = messages[locale] ?? messages.en;
+  const loader = options.loadCatalog ?? loadEmojiCatalog;
+  renderAppStatus(root, text.loading);
+
+  try {
+    const catalog = await loader(locale);
+    createEmojiDeckApp(root, { locale, catalog, loadCatalog: loader });
+  } catch {
+    renderAppStatus(root, text.loadFailed, text.retry, () => {
+      void initializeEmojiDeckApp(root, options);
+    });
+  }
+}
+
+function renderAppStatus(
+  root: HTMLElement,
+  message: string,
+  actionLabel?: string,
+  action?: () => void,
+): void {
+  const shell = document.createElement('main');
+  const indicator = document.createElement('span');
+  const text = document.createElement('p');
+  shell.className = 'app-status-shell';
+  shell.setAttribute('aria-live', 'polite');
+  shell.setAttribute('aria-busy', String(!action));
+  indicator.className = 'app-status-indicator';
+  indicator.setAttribute('aria-hidden', 'true');
+  text.textContent = message;
+  shell.append(indicator, text);
+
+  if (actionLabel && action) {
+    const button = document.createElement('button');
+    button.className = 'status-retry-button';
+    button.type = 'button';
+    button.textContent = actionLabel;
+    button.addEventListener('click', action, { once: true });
+    shell.append(button);
+  }
+
+  root.replaceChildren(shell);
+}
+
+export function createEmojiDeckApp(root: HTMLElement, options: EmojiDeckAppOptions): void {
   bindGlobalSearchShortcut();
   const browserStorage = getBrowserStorage();
   const recentStore = createRecentEmojiStore(browserStorage);
   const favoriteStore = createFavoriteEmojiStore(browserStorage);
+  const skinToneStore = createSkinToneStore(browserStorage);
   const themeController = createThemeController({
     root: document.documentElement,
     storage: browserStorage,
     colorScheme: getColorSchemePreference(),
   });
+  const loadCatalog = options.loadCatalog ?? loadEmojiCatalog;
   const state: EmojiDeckState = {
+    locale: options.locale,
+    catalog: options.catalog,
     activeView: 'faces',
     lastCategory: 'faces',
     query: '',
     recentIds: recentStore.read(),
     favoriteIds: favoriteStore.read(),
+    skinTonePreference: skinToneStore.read(),
     toastMessage: null,
   };
+  let languageRequest = 0;
+  let languageCatalogsWarmed = false;
+  let activeVariantTrigger: HTMLButtonElement | null = null;
+  let longPressTimer: number | null = null;
+  let longPressTriggeredId: string | null = null;
+  document.documentElement.lang = state.locale;
+
+  function getMessages(): Messages {
+    return messages[state.locale] ?? messages.en;
+  }
 
   function renderShell(): void {
+    const text = getMessages();
+    activeVariantTrigger = null;
+    const previousResults = root.querySelector<HTMLElement>('[data-results-region]');
+    if (previousResults) {
+      disposeEmojiResults(previousResults);
+    }
+
     root.innerHTML = `
       <main class="app-shell" aria-label="EmojiDeck">
-        <aside class="desktop-sidebar" aria-label="Categories">
-          <a class="brand" href="#" aria-label="EmojiDeck accueil">EmojiDeck</a>
-          <nav class="sidebar-nav" aria-label="Categories emoji">
-            ${emojiCategories.map((category) => renderSidebarButton(category, state.activeView)).join('')}
+        <aside class="desktop-sidebar" aria-label="${text.categoriesLabel}">
+          <a class="brand" href="#" aria-label="${text.home}">EmojiDeck</a>
+          <nav class="sidebar-nav" aria-label="${text.categoriesLabel}">
+            ${emojiCategories.map((category) => renderSidebarButton(category, state.activeView, text)).join('')}
           </nav>
           <div class="sidebar-separator" role="presentation"></div>
-          <nav class="sidebar-nav utility-nav" aria-label="Collections">
+          <nav class="sidebar-nav utility-nav" aria-label="${text.collectionsLabel}">
             <button class="sidebar-item" type="button" data-collection-id="recents" disabled>
               <span class="nav-icon" aria-hidden="true">◷</span>
-              <span>Recents</span>
+              <span>${text.recents}</span>
             </button>
             <button class="sidebar-item" type="button" data-collection-id="favorites" disabled>
               <span class="nav-icon" aria-hidden="true">☆</span>
-              <span>Favoris</span>
+              <span>${text.favorites}</span>
             </button>
           </nav>
         </aside>
 
         <section class="main-panel">
           <header class="desktop-topbar">
-            ${renderSearch()}
-            <div class="desktop-controls" aria-label="Preferences">
+            ${renderSearch(text)}
+            <div class="desktop-controls" aria-label="${text.preferences}">
               <label class="theme-control">
-                <span>Theme</span>
-                ${renderThemeSelect('desktop', themeController.getMode())}
+                <span>${text.theme}</span>
+                ${renderThemeSelect('desktop', themeController.getMode(), text)}
               </label>
-              <button class="plain-control language-control" type="button" data-language-select disabled>
-                <span>Langue</span>
-                <span class="control-value">FR</span>
-                <span aria-hidden="true">⌄</span>
-              </button>
+              <label class="skin-tone-control">
+                <span>${text.skinTone}</span>
+                ${renderSkinToneSelect('desktop', state.skinTonePreference, text)}
+              </label>
+              <label class="language-control">
+                <span>${text.language}</span>
+                ${renderLanguageSelect('desktop', state.locale, text)}
+              </label>
             </div>
           </header>
 
           <header class="mobile-header">
-            <a class="brand" href="#" aria-label="EmojiDeck accueil">EmojiDeck</a>
+            <a class="brand" href="#" aria-label="${text.home}">EmojiDeck</a>
             <button
               class="mobile-menu-button"
               type="button"
-              aria-label="Ouvrir le menu"
+              aria-label="${text.openMenu}"
               aria-controls="mobile-settings"
               aria-expanded="false"
             >☰</button>
           </header>
           <div id="mobile-settings" class="mobile-settings" data-mobile-menu hidden>
             <label class="mobile-setting-row">
-              <span>Theme</span>
-              ${renderThemeSelect('mobile', themeController.getMode())}
+              <span>${text.theme}</span>
+              ${renderThemeSelect('mobile', themeController.getMode(), text)}
             </label>
-            <button class="mobile-setting-row" type="button" data-language-select disabled>
-              <span>Langue</span>
-              <span class="control-value">FR</span>
-            </button>
+            <label class="mobile-setting-row">
+              <span>${text.language}</span>
+              ${renderLanguageSelect('mobile', state.locale, text)}
+            </label>
+            <label class="mobile-setting-row">
+              <span>${text.skinTone}</span>
+              ${renderSkinToneSelect('mobile', state.skinTonePreference, text)}
+            </label>
           </div>
-          <div class="mobile-search">${renderSearch()}</div>
-          <nav class="mobile-category-bar" aria-label="Categories emoji mobile">
-            ${emojiCategories.map((category) => renderMobileCategoryButton(category, state.activeView)).join('')}
+          <div class="mobile-search">${renderSearch(text)}</div>
+          <nav class="mobile-category-bar" aria-label="${text.mobileCategoriesLabel}">
+            ${emojiCategories.map((category) => renderMobileCategoryButton(category, state.activeView, text)).join('')}
           </nav>
 
           <div class="content-scroll">
@@ -138,15 +231,165 @@ export function createEmojiDeckApp(root: HTMLElement): void {
         </section>
 
         <div data-toast-region></div>
+        <div data-variant-menu-region></div>
       </main>
     `;
 
-    bindEvents();
+    root.querySelectorAll<HTMLInputElement>('input[type="search"]').forEach((input) => {
+      input.value = state.query;
+    });
     updateView();
   }
 
+  async function copyEmojiValue(
+    emoji: string,
+    emojiId: string,
+    sourceButton?: HTMLButtonElement,
+  ): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(emoji);
+      const shouldRestoreFocus = sourceButton && document.activeElement === sourceButton;
+      state.recentIds = recentStore.add(emojiId);
+      updateCollectionNavigation();
+
+      if (state.activeView === 'recents' && state.query.trim().length === 0) {
+        updateResults();
+
+        if (shouldRestoreFocus) {
+          root
+            .querySelector<HTMLButtonElement>(
+              `[data-emoji-button][data-emoji-id="${emojiId}"]`,
+            )
+            ?.focus();
+        }
+      }
+
+      showToast(getMessages().copied);
+    } catch {
+      showToast(getMessages().copyFailed);
+    }
+  }
+
+  function openVariantMenu(emojiId: string, source: HTMLButtonElement): void {
+    const entry = state.catalog.getById(emojiId);
+    if (!entry?.skinToneVariants?.length) {
+      return;
+    }
+
+    closeVariantMenu(false);
+    const trigger =
+      source.matches('[data-variant-toggle]')
+        ? source
+        : source.closest('.emoji-cell')?.querySelector<HTMLButtonElement>('[data-variant-toggle]') ??
+          source;
+    const region = root.querySelector<HTMLElement>('[data-variant-menu-region]');
+    if (!region) {
+      return;
+    }
+
+    const text = getMessages();
+    const popover = document.createElement('div');
+    const heading = document.createElement('h2');
+    const grid = document.createElement('div');
+    const variants = [entry.emoji, ...entry.skinToneVariants];
+    const headingId = `skin-tone-heading-${entry.id}`;
+    popover.className = 'skin-tone-popover';
+    popover.setAttribute('role', 'dialog');
+    popover.setAttribute('aria-modal', 'false');
+    popover.setAttribute('aria-labelledby', headingId);
+    heading.id = headingId;
+    heading.textContent = text.variantsFor(entry.name);
+    grid.className = 'skin-tone-variant-grid';
+
+    for (const [index, variant] of variants.entries()) {
+      const option = document.createElement('button');
+      const toneLabel = getVariantToneLabel(variant, index, text);
+      option.className = 'skin-tone-variant';
+      option.type = 'button';
+      option.dataset.variantOption = '';
+      option.dataset.emoji = variant;
+      option.dataset.emojiId = entry.id;
+      option.setAttribute('aria-label', text.copyVariant(entry.name, toneLabel));
+      option.title = toneLabel;
+      option.textContent = variant;
+      grid.append(option);
+    }
+
+    popover.append(heading, grid);
+    region.append(popover);
+    activeVariantTrigger = trigger;
+    trigger.setAttribute('aria-expanded', 'true');
+
+    const rect = source.getBoundingClientRect();
+    const width = popover.offsetWidth || 336;
+    const height = popover.offsetHeight || 260;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    popover.style.left = `${Math.max(12, Math.min(rect.left, viewportWidth - width - 12))}px`;
+    popover.style.top = `${rect.bottom + height + 12 > viewportHeight ? Math.max(12, rect.top - height - 8) : rect.bottom + 8}px`;
+    grid.querySelector<HTMLButtonElement>('[data-variant-option]')?.focus();
+  }
+
+  function closeVariantMenu(restoreFocus: boolean): void {
+    const trigger = activeVariantTrigger;
+    root.querySelector<HTMLElement>('[data-variant-menu-region]')?.replaceChildren();
+    trigger?.setAttribute('aria-expanded', 'false');
+    activeVariantTrigger = null;
+    if (restoreFocus) {
+      trigger?.focus();
+    }
+  }
+
+  function clearLongPressTimer(): void {
+    if (longPressTimer !== null) {
+      window.clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }
+
   function bindEvents(): void {
+    root.addEventListener('focusin', (event) => {
+      if (event.target instanceof Element && event.target.matches('[data-language-select]')) {
+        warmLanguageCatalogs();
+      }
+    });
+
     root.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && activeVariantTrigger) {
+        event.preventDefault();
+        closeVariantMenu(true);
+        return;
+      }
+
+      const variantOption =
+        event.target instanceof Element
+          ? event.target.closest<HTMLButtonElement>('[data-variant-option]')
+          : null;
+
+      if (variantOption && ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+        const options = Array.from(
+          root.querySelectorAll<HTMLButtonElement>('[data-variant-option]'),
+        );
+        const currentIndex = options.indexOf(variantOption);
+        const columns = 6;
+        const nextIndex =
+          event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? options.length - 1
+              : currentIndex +
+                (event.key === 'ArrowRight'
+                  ? 1
+                  : event.key === 'ArrowLeft'
+                    ? -1
+                    : event.key === 'ArrowDown'
+                      ? columns
+                      : -columns);
+        event.preventDefault();
+        options[nextIndex]?.focus();
+        return;
+      }
+
       if (
         event.key === 'Escape' &&
         event.target instanceof HTMLInputElement &&
@@ -235,6 +478,10 @@ export function createEmojiDeckApp(root: HTMLElement): void {
           firstButton.focus();
         }
       } else if (event.key === 'End') {
+        const resultsRegion = root.querySelector<HTMLElement>('[data-results-region]');
+        if (resultsRegion) {
+          completeEmojiResults(resultsRegion);
+        }
         const buttons = root.querySelectorAll<HTMLButtonElement>('[data-emoji-button]');
         const lastButton = buttons.item(buttons.length - 1);
 
@@ -242,11 +489,22 @@ export function createEmojiDeckApp(root: HTMLElement): void {
           lastButton.focus();
         }
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        const buttons = Array.from(
+        let buttons = Array.from(
           root.querySelectorAll<HTMLButtonElement>('[data-emoji-button]'),
         );
         const direction = event.key === 'ArrowDown' ? 1 : -1;
-        const nextButton = findVerticalEmoji(button, buttons, direction);
+        let nextButton = findVerticalEmoji(button, buttons, direction);
+
+        if (!nextButton && direction === 1) {
+          const resultsRegion = root.querySelector<HTMLElement>('[data-results-region]');
+          if (resultsRegion) {
+            revealMoreEmojiResults(resultsRegion);
+            buttons = Array.from(
+              root.querySelectorAll<HTMLButtonElement>('[data-emoji-button]'),
+            );
+            nextButton = findVerticalEmoji(button, buttons, direction);
+          }
+        }
 
         if (nextButton) {
           nextButton.focus();
@@ -254,15 +512,34 @@ export function createEmojiDeckApp(root: HTMLElement): void {
       }
     });
 
-    root.addEventListener('change', (event) => {
+    root.addEventListener('change', async (event) => {
       const select = event.target;
 
-      if (!(select instanceof HTMLSelectElement) || !select.matches('[data-theme-select]')) {
+      if (!(select instanceof HTMLSelectElement)) {
         return;
       }
 
-      themeController.setMode(select.value as ThemeMode);
-      syncThemeSelects();
+      if (select.matches('[data-theme-select]')) {
+        themeController.setMode(select.value as ThemeMode);
+        syncThemeSelects();
+        return;
+      }
+
+      if (select.matches('[data-language-select]')) {
+        await changeLanguage(select.value as LocaleCode);
+        return;
+      }
+
+      if (select.matches('[data-skin-tone-select]')) {
+        const preference = select.value as SkinTonePreference;
+        if (skinTonePreferences.includes(preference)) {
+          state.skinTonePreference = preference;
+          skinToneStore.write(preference);
+          syncSkinToneSelects();
+          closeVariantMenu(false);
+          updateResults();
+        }
+      }
     });
 
     root.addEventListener('input', (event) => {
@@ -284,15 +561,41 @@ export function createEmojiDeckApp(root: HTMLElement): void {
         return;
       }
 
+      const variantOption = target.closest<HTMLButtonElement>('[data-variant-option]');
+
+      if (variantOption?.dataset.emoji && variantOption.dataset.emojiId) {
+        const trigger = activeVariantTrigger;
+        closeVariantMenu(false);
+        await copyEmojiValue(variantOption.dataset.emoji, variantOption.dataset.emojiId);
+        trigger?.focus();
+        return;
+      }
+
+      const variantToggle = target.closest<HTMLButtonElement>('[data-variant-toggle]');
+
+      if (variantToggle?.dataset.emojiId) {
+        if (activeVariantTrigger === variantToggle) {
+          closeVariantMenu(true);
+        } else {
+          openVariantMenu(variantToggle.dataset.emojiId, variantToggle);
+        }
+        return;
+      }
+
+      if (activeVariantTrigger && !target.closest('.skin-tone-popover')) {
+        closeVariantMenu(false);
+      }
+
       const menuButton = target.closest<HTMLButtonElement>('.mobile-menu-button');
 
       if (menuButton) {
         const menu = root.querySelector<HTMLElement>('[data-mobile-menu]');
 
         if (menu) {
+          const text = getMessages();
           menu.hidden = !menu.hidden;
           menuButton.setAttribute('aria-expanded', String(!menu.hidden));
-          menuButton.setAttribute('aria-label', menu.hidden ? 'Ouvrir le menu' : 'Fermer le menu');
+          menuButton.setAttribute('aria-label', menu.hidden ? text.openMenu : text.closeMenu);
         }
 
         return;
@@ -357,29 +660,93 @@ export function createEmojiDeckApp(root: HTMLElement): void {
         return;
       }
 
-      try {
-        await navigator.clipboard.writeText(emoji);
-        const shouldRestoreFocus = document.activeElement === emojiButton;
-        state.recentIds = recentStore.add(emojiId);
-        updateCollectionNavigation();
+      if (longPressTriggeredId === emojiId) {
+        longPressTriggeredId = null;
+        return;
+      }
 
-        if (state.activeView === 'recents' && state.query.trim().length === 0) {
-          updateResults();
+      await copyEmojiValue(emoji, emojiId, emojiButton);
+    });
 
-          if (shouldRestoreFocus) {
-            root
-              .querySelector<HTMLButtonElement>(
-                `[data-emoji-button][data-emoji-id="${emojiId}"]`,
-              )
-              ?.focus();
-          }
-        }
+    root.addEventListener('contextmenu', (event) => {
+      const button =
+        event.target instanceof Element
+          ? event.target.closest<HTMLButtonElement>('[data-emoji-button][data-supports-skin-tone="true"]')
+          : null;
 
-        showToast('Copié !');
-      } catch {
-        showToast('Copie impossible');
+      if (button?.dataset.emojiId) {
+        event.preventDefault();
+        openVariantMenu(button.dataset.emojiId, button);
       }
     });
+
+    root.addEventListener('pointerdown', (event) => {
+      if (event.target instanceof Element && event.target.matches('[data-language-select]')) {
+        warmLanguageCatalogs();
+        return;
+      }
+
+      const button =
+        event.target instanceof Element
+          ? event.target.closest<HTMLButtonElement>('[data-emoji-button][data-supports-skin-tone="true"]')
+          : null;
+
+      clearLongPressTimer();
+      if (!button?.dataset.emojiId || event.button !== 0) {
+        return;
+      }
+
+      const emojiId = button.dataset.emojiId;
+      longPressTriggeredId = null;
+      longPressTimer = window.setTimeout(() => {
+        longPressTriggeredId = emojiId;
+        openVariantMenu(emojiId, button);
+      }, 500);
+    });
+
+    root.addEventListener('pointerup', clearLongPressTimer);
+    root.addEventListener('pointercancel', clearLongPressTimer);
+    root.addEventListener('pointermove', clearLongPressTimer);
+  }
+
+  function warmLanguageCatalogs(): void {
+    if (languageCatalogsWarmed) {
+      return;
+    }
+
+    languageCatalogsWarmed = true;
+    for (const locale of supportedLocales) {
+      if (locale !== state.locale) {
+        void loadCatalog(locale).catch(() => undefined);
+      }
+    }
+  }
+
+  async function changeLanguage(locale: LocaleCode): Promise<void> {
+    if (!supportedLocales.includes(locale) || locale === state.locale) {
+      syncLanguageSelects();
+      return;
+    }
+
+    const request = ++languageRequest;
+    setLanguageSelectsDisabled(true);
+
+    try {
+      const catalog = await loadCatalog(locale);
+      if (request !== languageRequest) {
+        return;
+      }
+
+      state.locale = locale;
+      state.catalog = catalog;
+      document.documentElement.lang = locale;
+      saveLocale(browserStorage, locale);
+      renderShell();
+    } finally {
+      if (request === languageRequest) {
+        setLanguageSelectsDisabled(false);
+      }
+    }
   }
 
   function showToast(message: string): void {
@@ -409,8 +776,9 @@ export function createEmojiDeckApp(root: HTMLElement): void {
   }
 
   function updateCollectionNavigation(): void {
-    updateCollectionButton('recents', getRecentEmojis().length > 0, 'Recents', '◷');
-    updateCollectionButton('favorites', getFavoriteEmojis().length > 0, 'Favoris', '☆');
+    const text = getMessages();
+    updateCollectionButton('recents', getRecentEmojis().length > 0, text.recents, '◷');
+    updateCollectionButton('favorites', getFavoriteEmojis().length > 0, text.favorites, '☆');
   }
 
   function updateCollectionButton(
@@ -452,21 +820,22 @@ export function createEmojiDeckApp(root: HTMLElement): void {
   }
 
   function updateResults(): void {
+    const text = getMessages();
     const activeView = state.activeView;
     const isCollection = isCollectionView(activeView);
     const activeCategory = getCategory(isCollection ? state.lastCategory : activeView);
     const trimmedQuery = state.query.trim();
     const isSearching = trimmedQuery.length > 0;
     const visibleEmojis = isSearching
-      ? searchEmojis(emojis, trimmedQuery, 'fr')
+      ? searchEmojis(state.catalog.emojis, trimmedQuery)
       : isCollection
         ? getCollectionEmojis(activeView)
-        : getEmojisByCategory(activeView);
+        : state.catalog.getByCategory(activeView);
     const sectionLabel = isCollection
       ? state.activeView === 'recents'
-        ? 'Recents'
-        : 'Favoris'
-      : activeCategory.label.fr;
+        ? text.recents
+        : text.favorites
+      : text.categories[activeCategory.id];
     const heading = root.querySelector<HTMLElement>('[data-section-heading]');
     const meta = root.querySelector<HTMLElement>('[data-search-meta]');
     const results = root.querySelector<HTMLElement>('[data-results-region]');
@@ -478,11 +847,13 @@ export function createEmojiDeckApp(root: HTMLElement): void {
     renderEmojiResults(
       { heading, meta, results },
       {
-        heading: isSearching ? 'Recherche' : sectionLabel,
-        gridLabel: isSearching ? `Resultats pour ${trimmedQuery}` : sectionLabel,
+        heading: isSearching ? text.searchHeading : sectionLabel,
+        gridLabel: isSearching ? text.resultsLabel(trimmedQuery) : sectionLabel,
         query: isSearching ? trimmedQuery : null,
         emojis: visibleEmojis,
         favoriteIds: new Set(state.favoriteIds),
+        messages: text,
+        skinTonePreference: state.skinTonePreference,
       },
     );
   }
@@ -523,6 +894,24 @@ export function createEmojiDeckApp(root: HTMLElement): void {
     });
   }
 
+  function syncLanguageSelects(): void {
+    root.querySelectorAll<HTMLSelectElement>('[data-language-select]').forEach((select) => {
+      select.value = state.locale;
+    });
+  }
+
+  function syncSkinToneSelects(): void {
+    root.querySelectorAll<HTMLSelectElement>('[data-skin-tone-select]').forEach((select) => {
+      select.value = state.skinTonePreference;
+    });
+  }
+
+  function setLanguageSelectsDisabled(disabled: boolean): void {
+    root.querySelectorAll<HTMLSelectElement>('[data-language-select]').forEach((select) => {
+      select.disabled = disabled;
+    });
+  }
+
   function clearSearch(): void {
     state.query = '';
     root.querySelectorAll<HTMLInputElement>('input[type="search"]').forEach((input) => {
@@ -532,14 +921,14 @@ export function createEmojiDeckApp(root: HTMLElement): void {
 
   function getRecentEmojis() {
     return state.recentIds.flatMap((id) => {
-      const entry = getEmojiById(id);
+      const entry = state.catalog.getById(id);
       return entry ? [entry] : [];
     });
   }
 
   function getFavoriteEmojis() {
     return state.favoriteIds.flatMap((id) => {
-      const entry = getEmojiById(id);
+      const entry = state.catalog.getById(id);
       return entry ? [entry] : [];
     });
   }
@@ -549,39 +938,166 @@ export function createEmojiDeckApp(root: HTMLElement): void {
   }
 
   renderShell();
+  bindEvents();
+  scheduleEmojiGlyphWarmup(state.catalog);
 }
 
 function getCategory(id: EmojiCategoryId): EmojiCategory {
   return emojiCategories.find((category) => category.id === id) ?? emojiCategories[0];
 }
 
-function renderSearch(): string {
+function scheduleEmojiGlyphWarmup(catalog: EmojiCatalog): void {
+  if (typeof CanvasRenderingContext2D === 'undefined') {
+    return;
+  }
+
+  const canvas = document.createElement('canvas');
+  let context: CanvasRenderingContext2D | null;
+  try {
+    context = canvas.getContext('2d');
+  } catch {
+    return;
+  }
+  if (!context) {
+    return;
+  }
+
+  canvas.width = 64;
+  canvas.height = 64;
+  context.font = '38px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+  context.textBaseline = 'top';
+  const priorityCategories: EmojiCategoryId[] = [
+    'people',
+    'objects',
+    'flags',
+    'animals',
+    'food',
+    'travel',
+    'activities',
+    'symbols',
+  ];
+  const queue = priorityCategories.flatMap((category) =>
+    catalog.getByCategory(category).slice(0, 24),
+  );
+
+  function warmNext(): void {
+    const entry = queue.shift();
+    if (!entry) {
+      return;
+    }
+
+    context?.clearRect(0, 0, canvas.width, canvas.height);
+    context?.fillText(entry.emoji, 4, 4);
+    scheduleIdleWork(warmNext);
+  }
+
+  scheduleIdleWork(warmNext);
+}
+
+function scheduleIdleWork(callback: () => void): void {
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(callback, { timeout: 1500 });
+  } else {
+    setTimeout(callback, 16);
+  }
+}
+
+function renderSearch(text: Messages): string {
   return `
     <label class="search-field">
       <span aria-hidden="true">⌕</span>
-      <input type="search" placeholder="Rechercher un emoji" aria-label="Rechercher un emoji" value="" />
+      <input type="search" placeholder="${text.searchPlaceholder}" aria-label="${text.searchPlaceholder}" />
       <kbd>Ctrl F</kbd>
     </label>
   `;
 }
 
-function renderThemeSelect(location: 'desktop' | 'mobile', mode: ThemeMode): string {
+function renderThemeSelect(
+  location: 'desktop' | 'mobile',
+  mode: ThemeMode,
+  text: Messages,
+): string {
   return `
     <select
       class="theme-select"
       data-theme-select="${location}"
-      aria-label="Choisir le theme"
+      aria-label="${text.chooseTheme}"
     >
-      <option value="system"${mode === 'system' ? ' selected' : ''}>Systeme</option>
-      <option value="light"${mode === 'light' ? ' selected' : ''}>Clair</option>
-      <option value="dark"${mode === 'dark' ? ' selected' : ''}>Sombre</option>
+      <option value="system"${mode === 'system' ? ' selected' : ''}>${text.system}</option>
+      <option value="light"${mode === 'light' ? ' selected' : ''}>${text.light}</option>
+      <option value="dark"${mode === 'dark' ? ' selected' : ''}>${text.dark}</option>
     </select>
   `;
+}
+
+function renderLanguageSelect(
+  location: 'desktop' | 'mobile',
+  locale: LocaleCode,
+  text: Messages,
+): string {
+  return `
+    <select
+      class="language-select"
+      data-language-select="${location}"
+      aria-label="${text.chooseLanguage}"
+    >
+      ${supportedLocales.map((option) => `<option value="${option}"${option === locale ? ' selected' : ''}>${option.toUpperCase()}</option>`).join('')}
+    </select>
+  `;
+}
+
+function renderSkinToneSelect(
+  location: 'desktop' | 'mobile',
+  preference: SkinTonePreference,
+  text: Messages,
+): string {
+  const previews: Record<SkinTonePreference, string> = {
+    neutral: '✋',
+    light: '✋🏻',
+    'medium-light': '✋🏼',
+    medium: '✋🏽',
+    'medium-dark': '✋🏾',
+    dark: '✋🏿',
+  };
+
+  return `
+    <select
+      class="skin-tone-select"
+      data-skin-tone-select="${location}"
+      aria-label="${text.chooseSkinTone}"
+    >
+      ${skinTonePreferences.map((option) => `<option value="${option}" aria-label="${text.skinToneNames[option]}"${option === preference ? ' selected' : ''}>${previews[option]}</option>`).join('')}
+    </select>
+  `;
+}
+
+function getVariantToneLabel(variant: string, index: number, text: Messages): string {
+  if (index === 0) {
+    return text.skinToneNames.neutral;
+  }
+
+  const preferenceByModifier = new Map<number, SkinTonePreference>([
+    [0x1f3fb, 'light'],
+    [0x1f3fc, 'medium-light'],
+    [0x1f3fd, 'medium'],
+    [0x1f3fe, 'medium-dark'],
+    [0x1f3ff, 'dark'],
+  ]);
+  const tones = [
+    ...new Set(
+      [...variant]
+        .map((character) => preferenceByModifier.get(character.codePointAt(0) ?? 0))
+        .filter((tone): tone is SkinTonePreference => tone !== undefined),
+    ),
+  ];
+
+  return tones.map((tone) => text.skinToneNames[tone]).join(' + ');
 }
 
 function renderSidebarButton(
   category: EmojiCategory,
   activeView: EmojiDeckView,
+  text: Messages,
 ): string {
   const isActive = category.id === activeView;
 
@@ -592,8 +1108,8 @@ function renderSidebarButton(
       data-category-id="${category.id}"
       aria-current="${isActive ? 'page' : 'false'}"
     >
-      <span class="nav-icon" aria-hidden="true">${categoryIcons[category.id]}</span>
-      <span>${category.label.fr}</span>
+      <span class="nav-icon" aria-hidden="true">${category.icon}</span>
+      <span>${text.categories[category.id]}</span>
     </button>
   `;
 }
@@ -601,6 +1117,7 @@ function renderSidebarButton(
 function renderMobileCategoryButton(
   category: EmojiCategory,
   activeView: EmojiDeckView,
+  text: Messages,
 ): string {
   const isActive = category.id === activeView;
 
@@ -609,10 +1126,10 @@ function renderMobileCategoryButton(
       class="mobile-category-button${isActive ? ' is-active' : ''}"
       type="button"
       data-category-id="${category.id}"
-      aria-label="${category.label.fr}"
+      aria-label="${text.categories[category.id]}"
       aria-current="${isActive ? 'page' : 'false'}"
     >
-      <span aria-hidden="true">${categoryIcons[category.id]}</span>
+      <span aria-hidden="true">${category.icon}</span>
     </button>
   `;
 }

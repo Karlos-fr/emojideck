@@ -1,6 +1,4 @@
-import type { EmojiEntry, LocaleCode } from './emojis';
-
-const fallbackLocale: LocaleCode = 'en';
+import type { EmojiEntry } from './emojis';
 
 export function normalizeSearchText(value: string): string {
   return value
@@ -15,7 +13,6 @@ export function normalizeSearchText(value: string): string {
 export function searchEmojis(
   emojis: EmojiEntry[],
   rawQuery: string,
-  locale: LocaleCode,
 ): EmojiEntry[] {
   const query = normalizeSearchText(rawQuery);
 
@@ -24,28 +21,27 @@ export function searchEmojis(
   }
 
   return emojis
-    .map((entry) => ({ entry, score: scoreEmoji(entry, query, locale) }))
+    .map((entry) => ({ entry, score: scoreEmoji(entry, query) }))
     .filter((result) => result.score > 0)
     .sort((first, second) => second.score - first.score)
     .map((result) => result.entry);
 }
 
-function scoreEmoji(entry: EmojiEntry, query: string, locale: LocaleCode): number {
-  const localizedScore = scoreFields(entry, query, locale, 100);
-  const fallbackScore =
-    locale === fallbackLocale ? 0 : scoreFields(entry, query, fallbackLocale, 40);
+function scoreEmoji(entry: EmojiEntry, query: string): number {
+  const localizedScore = scoreFields(entry.name, entry.keywords, query, 100);
+  const fallbackScore = scoreFields(entry.fallbackName, entry.fallbackKeywords, query, 40);
 
   return Math.max(localizedScore, fallbackScore);
 }
 
 function scoreFields(
-  entry: EmojiEntry,
+  localizedName: string,
+  localizedKeywords: string[],
   query: string,
-  locale: LocaleCode,
   baseScore: number,
 ): number {
-  const name = normalizeSearchText(entry.name[locale]);
-  const keywords = entry.keywords[locale].map(normalizeSearchText);
+  const name = normalizeSearchText(localizedName);
+  const keywords = localizedKeywords.map(normalizeSearchText);
   const nameTokens = tokenize(name);
   const keywordTokens = keywords.flatMap(tokenize);
 

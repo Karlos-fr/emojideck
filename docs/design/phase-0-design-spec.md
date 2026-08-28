@@ -63,7 +63,7 @@ Barre superieure desktop:
 Contenu desktop:
 
 - padding principal: `34px` a `42px`;
-- titre de section compact, exemple `Visages`;
+- titre de section compact, exemple `Smileys`;
 - grille emoji sans cartes individuelles;
 - taille bouton emoji: `56px` a `64px`;
 - taille visuelle emoji: `34px` a `42px`;
@@ -206,9 +206,12 @@ Composer:
 
 Categories visibles dans la maquette:
 
-- Visages;
+- Smileys;
+- Personnes;
 - Animaux;
 - Nourriture;
+- Activites;
+- Voyages;
 - Objets;
 - Symboles;
 - Drapeaux;

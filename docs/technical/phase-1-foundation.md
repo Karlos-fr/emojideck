@@ -37,8 +37,11 @@ Each emoji entry has:
 ## Initial Categories
 
 - Faces
+- People
 - Animals
 - Food
+- Activities
+- Travel
 - Objects
 - Symbols
 - Flags

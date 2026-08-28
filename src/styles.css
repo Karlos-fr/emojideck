@@ -87,6 +87,71 @@ button {
   box-shadow: var(--shadow-shell);
 }
 
+.app-status-shell {
+  width: min(100%, 1100px);
+  height: min(760px, calc(100vh - 96px));
+  min-height: 560px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-shell);
+  box-shadow: var(--shadow-shell);
+  color: var(--color-text-muted);
+}
+
+.app-status-shell p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.app-status-indicator {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: status-spin 700ms linear infinite;
+}
+
+.app-status-shell[aria-busy="false"] .app-status-indicator {
+  display: grid;
+  place-items: center;
+  border: 0;
+  color: var(--color-text-muted);
+  animation: none;
+}
+
+.app-status-shell[aria-busy="false"] .app-status-indicator::before {
+  content: "!";
+  font-size: 22px;
+  font-weight: 750;
+}
+
+.status-retry-button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--color-control-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.status-retry-button:hover,
+.status-retry-button:focus-visible {
+  background: var(--color-surface-hover);
+}
+
+@keyframes status-spin {
+  to { transform: rotate(360deg); }
+}
+
 .desktop-sidebar {
   min-width: 0;
   padding: 24px 18px;
@@ -107,13 +172,13 @@ button {
 
 .sidebar-nav {
   display: grid;
-  gap: 8px;
-  margin-top: 28px;
+  gap: 6px;
+  margin-top: 24px;
 }
 
 .sidebar-separator {
   height: 1px;
-  margin: 30px 0 26px;
+  margin: 20px 0 18px;
   background: var(--color-border);
 }
 
@@ -126,6 +191,8 @@ button {
 .mobile-category-button,
 .emoji-button,
 .favorite-toggle,
+.skin-tone-toggle,
+.skin-tone-variant,
 .mobile-menu-button {
   border: 0;
   background: transparent;
@@ -134,7 +201,7 @@ button {
 
 .sidebar-item {
   width: 100%;
-  min-height: 52px;
+  min-height: 46px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -193,6 +260,7 @@ button {
 }
 
 .search-field {
+  flex: 1 1 280px;
   width: min(100%, 470px);
   min-height: 52px;
   display: grid;
@@ -227,12 +295,15 @@ button {
 }
 
 .desktop-controls {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
 }
 
-.theme-control {
+.theme-control,
+.language-control,
+.skin-tone-control {
   min-height: 40px;
   display: inline-flex;
   align-items: center;
@@ -242,7 +313,9 @@ button {
   font-weight: 700;
 }
 
-.theme-select {
+.theme-select,
+.language-select,
+.skin-tone-select {
   min-height: 34px;
   max-width: 112px;
   padding: 0 28px 0 9px;
@@ -266,6 +339,21 @@ button {
 
 .language-control {
   gap: 8px;
+}
+
+.language-select {
+  width: 62px;
+  padding-right: 8px;
+  text-transform: uppercase;
+}
+
+.skin-tone-control {
+  gap: 8px;
+}
+
+.skin-tone-select {
+  width: 62px;
+  padding-right: 8px;
 }
 
 .control-value {
@@ -327,11 +415,43 @@ button {
   align-items: center;
 }
 
+.emoji-grid-sentinel {
+  width: 100%;
+  height: 1px;
+}
+
 .emoji-cell {
   position: relative;
   width: 60px;
   height: 60px;
   justify-self: center;
+  contain: layout style paint;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 60px;
+}
+
+.emoji-button > span {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.search-summary {
+  margin: -12px 0 22px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.empty-state {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  text-align: center;
 }
 
 .emoji-button {
@@ -358,8 +478,8 @@ button {
 
 .favorite-toggle {
   position: absolute;
-  top: -7px;
-  right: -7px;
+  top: 0;
+  right: 0;
   z-index: 1;
   width: 26px;
   height: 26px;
@@ -377,6 +497,52 @@ button {
     background 140ms ease;
 }
 
+.skin-tone-toggle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-surface);
+  opacity: 0;
+  transition:
+    opacity 140ms ease,
+    background 140ms ease;
+}
+
+.skin-tone-swatch {
+  width: 12px;
+  height: 12px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 32%, transparent);
+  border-radius: 50%;
+  background: #f4c7a1;
+}
+
+.skin-tone-swatch[data-tone="neutral"] {
+  background: conic-gradient(#f4c7a1, #9a5b38, #f4c7a1);
+}
+
+.skin-tone-swatch[data-tone="light"] { background: #ffdbac; }
+.skin-tone-swatch[data-tone="medium-light"] { background: #e6b98a; }
+.skin-tone-swatch[data-tone="medium"] { background: #c58c5b; }
+.skin-tone-swatch[data-tone="medium-dark"] { background: #9a5b38; }
+.skin-tone-swatch[data-tone="dark"] { background: #5c3521; }
+
+.emoji-cell:hover .skin-tone-toggle,
+.skin-tone-toggle:focus-visible,
+.skin-tone-toggle[aria-expanded="true"] {
+  opacity: 1;
+}
+
+.skin-tone-toggle:hover,
+.skin-tone-toggle:focus-visible {
+  background: var(--color-surface-hover);
+}
+
 .emoji-cell:hover .favorite-toggle,
 .favorite-toggle:focus-visible,
 .favorite-toggle[aria-pressed="true"] {
@@ -390,6 +556,48 @@ button {
 
 .favorite-toggle[aria-pressed="true"] {
   color: var(--color-accent);
+}
+
+.skin-tone-popover {
+  position: fixed;
+  z-index: 8;
+  width: min(336px, calc(100vw - 24px));
+  max-height: min(430px, calc(100vh - 24px));
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid var(--color-control-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+}
+
+.skin-tone-popover h2 {
+  margin: 0 0 12px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.skin-tone-variant-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 44px);
+  gap: 6px;
+}
+
+.skin-tone-variant {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  font-size: 27px;
+  line-height: 1;
+}
+
+.skin-tone-variant:hover,
+.skin-tone-variant:focus-visible {
+  background: var(--color-surface-hover);
 }
 
 .copy-toast {
@@ -450,6 +658,13 @@ button {
     min-height: 620px;
     display: flex;
     flex-direction: column;
+    border-radius: 18px;
+  }
+
+  .app-status-shell {
+    width: min(100%, 360px);
+    height: min(720px, calc(100vh - 40px));
+    min-height: 620px;
     border-radius: 18px;
   }
 
@@ -590,7 +805,7 @@ button {
   }
 
   .favorite-toggle {
-    top: -8px;
+    top: 0;
     right: 0;
     width: 24px;
     height: 24px;
@@ -598,11 +813,37 @@ button {
     opacity: 0.62;
   }
 
+  .skin-tone-toggle {
+    right: 0;
+    bottom: 0;
+    opacity: 0;
+  }
+
+  .skin-tone-popover {
+    right: 12px;
+    bottom: 12px;
+    left: 12px !important;
+    top: auto !important;
+    width: auto;
+  }
+
   .copy-toast {
     bottom: 18px;
     min-height: 48px;
     padding: 0 18px;
     font-size: 17px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-status-indicator {
+    animation-duration: 1400ms;
+  }
+
+  .emoji-button,
+  .favorite-toggle,
+  .skin-tone-toggle {
+    transition: none;
   }
 }
 

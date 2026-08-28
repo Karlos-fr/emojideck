@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const unicodeVersion = '17.0.0';
 const cldrVersion = '48.2.0';
-const locales = ['fr', 'en'];
+const locales = ['fr', 'en', 'de', 'it', 'es', 'pt'];
 const outputDirectory = fileURLToPath(new URL('../src/data/generated/', import.meta.url));
 const checkOnly = process.argv.includes('--check');
 const skinToneRange = [0x1f3fb, 0x1f3ff];
@@ -21,11 +21,11 @@ const sources = {
 
 const groupCategories = new Map([
   ['Smileys & Emotion', 'faces'],
-  ['People & Body', 'faces'],
+  ['People & Body', 'people'],
   ['Animals & Nature', 'animals'],
   ['Food & Drink', 'food'],
-  ['Travel & Places', 'objects'],
-  ['Activities', 'objects'],
+  ['Activities', 'activities'],
+  ['Travel & Places', 'travel'],
   ['Objects', 'objects'],
   ['Symbols', 'symbols'],
   ['Flags', 'flags'],

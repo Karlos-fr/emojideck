@@ -1,8 +1,8 @@
-import { createEmojiDeckApp } from './app';
+import { initializeEmojiDeckApp } from './app';
 import './styles.css';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
 if (app) {
-  createEmojiDeckApp(app);
+  void initializeEmojiDeckApp(app);
 }

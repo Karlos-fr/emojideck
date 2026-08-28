@@ -18,8 +18,7 @@ npm run data:generate
 
 Cette commande telecharge les sources versionnees, valide leur contenu et genere :
 
-- `src/data/generated/emojis.fr.json` ;
-- `src/data/generated/emojis.en.json` ;
+- `src/data/generated/emojis.<langue>.json` pour `fr`, `en`, `de`, `it`, `es` et `pt` ;
 - `src/data/generated/manifest.json`.
 
 Les fichiers generes sont suivis par Git. Le site reste donc entierement statique et ne contacte ni Unicode ni CLDR a l'execution.
@@ -34,14 +33,17 @@ npm run data:check
 
 Chaque fichier localise contient le nom et les mots-cles de sa langue, ainsi que les champs structurels communs : identifiant stable, emoji, categorie, codepoints et variantes de teinte.
 
-Les groupes Unicode sont regroupes dans les six categories de la maquette :
+Les groupes Unicode alimentent directement les neuf categories du catalogue :
 
 | Groupe Unicode | Categorie EmojiDeck |
 | --- | --- |
-| Smileys & Emotion, People & Body | `faces` |
+| Smileys & Emotion | `faces` |
+| People & Body | `people` |
 | Animals & Nature | `animals` |
 | Food & Drink | `food` |
-| Travel & Places, Activities, Objects | `objects` |
+| Activities | `activities` |
+| Travel & Places | `travel` |
+| Objects | `objects` |
 | Symbols | `symbols` |
 | Flags | `flags` |
 
